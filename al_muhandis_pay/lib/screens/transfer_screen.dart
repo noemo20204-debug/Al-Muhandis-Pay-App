@@ -4,6 +4,7 @@ import '../core/elite_theme.dart';
 import '../services/api_engine.dart';
 import '../widgets/glass_input.dart';
 import '../widgets/elite_button.dart';
+import '../services/biometric_service.dart'; // 🛡️ استدعاء درع البصمة
 
 class TransferScreen extends StatefulWidget {
   const TransferScreen({super.key});
@@ -37,7 +38,7 @@ class _TransferScreenState extends State<TransferScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: EliteColors.goldPrimary),
             onPressed: () {
               Navigator.pop(ctx);
-              _executeTransfer();
+              _executeTransfer(); // استدعاء التنفيذ الذي سيطلب البصمة
             },
             child: Text('تأكيد السحب', style: GoogleFonts.cairo(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
@@ -47,8 +48,26 @@ class _TransferScreenState extends State<TransferScreen> {
   }
 
   Future<void> _executeTransfer() async {
-    setState(() => _isLoading = true);
     final amount = double.tryParse(_amountCtrl.text) ?? 0;
+
+    // ═══════════════════════════════════════════════════
+    //  🛡️ الدرع البيومتري — لا تحويل بدون بصمة!
+    // ═══════════════════════════════════════════════════
+    final bool authenticated = await BiometricService.authenticateForTransfer(
+      amount: amount,
+      recipientName: _receiverCtrl.text,
+    );
+
+    if (!authenticated) {
+      if (mounted) {
+        _showToast('تم إلغاء العملية: فشل التحقق البيومتري.', EliteColors.danger);
+      }
+      return; // ⛔ إيقاف التحويل فوراً ومنع الاتصال بالسيرفر
+    }
+    // ═══════════════════════════════════════════════════
+
+    // ✅ البصمة نجحت — تابع التحويل الأصلي
+    setState(() => _isLoading = true);
     
     final result = await ApiEngine().sendTransfer(_receiverCtrl.text, amount, _descCtrl.text);
     

@@ -38,11 +38,11 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final res = await ApiEngine().login(_userCtrl.text, _passCtrl.text);
       if (res.statusCode == 200) {
-        if (res.data['status'] == 'pending_email_otp') {
-          _authTicket = res.data['auth_ticket'];
+        if (res.data['data']['status'] == 'pending_email_otp') {
+          _authTicket = res.data['data']['auth_ticket'];
           _showToast(res.data['message'], EliteColors.success);
           setState(() => _authPhase = 1); // التحول لشاشة الإيميل
-        } else if (res.data['status'] == 'authenticated') {
+        } else if (res.data['data']['status'] == 'authenticated') {
           // تخطي سيادي (Master Admin)
           await _saveTokenAndEnter(res.data);
         }
@@ -60,8 +60,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       final res = await ApiEngine().verifyEmail(_authTicket, _emailOtpCtrl.text);
-      if (res.statusCode == 200 && res.data['status'] == 'pending_google_2fa') {
-        _authTicket = res.data['auth_ticket']; // تحديث التذكرة
+      if (res.statusCode == 200 && res.data['data']['status'] == 'pending_google_2fa') {
+        _authTicket = res.data['data']['auth_ticket']; // تحديث التذكرة
         _showToast(res.data['message'], EliteColors.success);
         setState(() => _authPhase = 2); // التحول لشاشة جوجل
       }
@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       final res = await ApiEngine().verifyGoogle(_authTicket, _googleOtpCtrl.text);
-      if (res.statusCode == 200 && res.data['status'] == 'authenticated') {
+      if (res.statusCode == 200 && res.data['data']['status'] == 'authenticated') {
         _showToast(res.data['message'], EliteColors.success);
         await _saveTokenAndEnter(res.data);
       }

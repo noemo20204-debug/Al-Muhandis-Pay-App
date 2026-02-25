@@ -1,3 +1,4 @@
+import 'statement_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -120,7 +121,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                             children: [
                               _buildActionBtn(Icons.send_rounded, 'تحويل', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransferScreen()))),
                               _buildActionBtn(Icons.account_balance_wallet, 'تغذية', () {}),
-                              _buildActionBtn(Icons.history, 'السجل', () {}),
+                              _buildActionBtn(Icons.history, 'السجل', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StatementScreen()))),
                               _buildActionBtn(Icons.qr_code_scanner, 'مسح', () {}),
                             ],
                           ),

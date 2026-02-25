@@ -6,10 +6,11 @@ class TransactionModel {
   final int transactionId;
   final String txCategory;
   final String txStatus;
+  final String receiptId;
 
   TransactionModel({
     required this.entryId, required this.entryType, required this.amount, required this.createdAt,
-    required this.transactionId, required this.txCategory, required this.txStatus,
+    required this.transactionId, required this.txCategory, required this.txStatus, required this.receiptId,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
@@ -21,6 +22,7 @@ class TransactionModel {
       transactionId: int.tryParse(json['transaction_id'].toString()) ?? 0,
       txCategory: json['tx_category'] ?? '',
       txStatus: json['tx_status'] ?? '',
+      receiptId: json['receipt_id'] ?? '',
     );
   }
 
@@ -31,6 +33,15 @@ class TransactionModel {
       case 'withdrawal': return 'سحب';
       case 'transfer': return 'حوالة';
       default: return txCategory;
+    }
+  }
+
+  String get categoryLabelEn {
+    switch (txCategory) {
+      case 'deposit': return 'DEPOSIT';
+      case 'withdrawal': return 'WITHDRAWAL';
+      case 'transfer': return 'TRANSFER';
+      default: return txCategory.toUpperCase();
     }
   }
 }

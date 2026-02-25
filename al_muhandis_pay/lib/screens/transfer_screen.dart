@@ -28,7 +28,7 @@ class _TransferScreenState extends State<TransferScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: EliteColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), border: Border.all(color: EliteColors.goldPrimary)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: EliteColors.goldPrimary)),
         title: Text('تأكيد الحوالة', style: GoogleFonts.cairo(color: EliteColors.goldPrimary, fontWeight: FontWeight.bold)),
         content: Text('هل أنت متأكد من إرسال ${_amountCtrl.text} USDT إلى ${_receiverCtrl.text}؟\nلا يمكن التراجع عن هذه العملية.', style: GoogleFonts.cairo(color: Colors.white)),
         actions: [

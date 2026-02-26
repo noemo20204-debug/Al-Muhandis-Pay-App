@@ -69,9 +69,9 @@ class _DepositScreenState extends State<DepositScreen> with TickerProviderStateM
       if (res.statusCode == 200) {
         final data = res.data['data'] ?? res.data;
         setState(() {
-          _depositId = data['deposit_id']; _payAddress = data['pay_address'] ?? '';
+          _depositId = int.tryParse(data['deposit_id']?.toString() ?? '0'); _payAddress = data['pay_address'] ?? '';
           _payAmount = data['pay_amount']?.toString() ?? amountText; _status = data['status'] ?? 'waiting';
-          _expiresIn = data['expires_in'] ?? 3600; _phase = 'waiting'; _isLoading = false;
+          _expiresIn = int.tryParse(data['expires_in']?.toString() ?? '3600') ?? 3600; _phase = 'waiting'; _isLoading = false;
         });
         _fadeCtrl.reset(); _fadeCtrl.forward(); _startPolling(); _startCountdown();
       }

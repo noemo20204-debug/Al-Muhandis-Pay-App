@@ -1,8 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dio/dio.dart';
-import '../core/elite_theme.dart';
 import '../services/api_engine.dart';
 import '../widgets/glass_input.dart';
 import '../widgets/elite_button.dart';
@@ -15,167 +12,120 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // 0 = Credentials, 1 = Email OTP, 2 = Google 2FA
-  int _authPhase = 0; 
-  String _authTicket = '';
+  final _usernameCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _otpCtrl = TextEditingController();
+  final _googleAuthCtrl = TextEditingController();
+  
   bool _isLoading = false;
-  bool _obscure = true;
+  String _currentStep = 'login'; // login, otp, 2fa
+  String _authTicket = '';
 
-  // Controllers
-  final _userCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  final _emailOtpCtrl = TextEditingController();
-  final _googleOtpCtrl = TextEditingController();
-
-  void _showToast(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg, style: GoogleFonts.cairo()), backgroundColor: color));
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message, style: GoogleFonts.cairo()), backgroundColor: Colors.red.shade800));
   }
 
-  // 🛡️ المرحلة الأولى: الباسورد
-  Future<void> _processPhase1() async {
-    if (_userCtrl.text.isEmpty || _passCtrl.text.isEmpty) return;
+  Future<void> _handleLogin() async {
+    if (_usernameCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) {
+      _showError('الرجاء إدخال اسم المستخدم وكلمة المرور');
+      return;
+    }
     setState(() => _isLoading = true);
     try {
-      final res = await ApiEngine().login(_userCtrl.text, _passCtrl.text);
-      if (res.statusCode == 200) {
-        if (res.data['data']['status'] == 'pending_email_otp') {
+      final res = await ApiEngine().login(_usernameCtrl.text, _passwordCtrl.text);
+      if (res.statusCode == 200 && res.data['data']['status'] == 'pending_email_otp') {
+        setState(() {
           _authTicket = res.data['data']['auth_ticket'];
-          _showToast(res.data['message'], EliteColors.success);
-          setState(() => _authPhase = 1); // التحول لشاشة الإيميل
-        } else if (res.data['data']['status'] == 'authenticated') {
-          // تخطي سيادي (Master Admin)
-          await _saveTokenAndEnter(res.data);
-        }
+          _currentStep = 'otp';
+        });
+      } else if (res.statusCode == 200 && res.data['data']['status'] == 'authenticated') {
+        _navigateToDashboard();
       }
-    } on DioException catch (e) {
-      _showToast(e.response?.data['message'] ?? 'بيانات غير صحيحة', EliteColors.danger);
+    } catch (e) {
+      _showError('بيانات الدخول غير صحيحة');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
-  // 📧 المرحلة الثانية: كود الإيميل
-  Future<void> _processPhase2() async {
-    if (_emailOtpCtrl.text.isEmpty) return;
+  Future<void> _handleOtp() async {
+    if (_otpCtrl.text.isEmpty) return;
     setState(() => _isLoading = true);
     try {
-      final res = await ApiEngine().verifyEmail(_authTicket, _emailOtpCtrl.text);
+      final res = await ApiEngine().verifyEmail(_authTicket, _otpCtrl.text);
       if (res.statusCode == 200 && res.data['data']['status'] == 'pending_google_2fa') {
-        _authTicket = res.data['data']['auth_ticket']; // تحديث التذكرة
-        _showToast(res.data['message'], EliteColors.success);
-        setState(() => _authPhase = 2); // التحول لشاشة جوجل
+        setState(() => _currentStep = '2fa');
       }
-    } on DioException catch (e) {
-      _showToast(e.response?.data['message'] ?? 'كود الإيميل غير صحيح', EliteColors.danger);
-      if (e.response?.statusCode == 401) setState(() => _authPhase = 0); // العودة للبداية إذا انتهت الجلسة
+    } catch (e) {
+      _showError('رمز التحقق غير صحيح أو منتهي الصلاحية');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
-  // 🔐 المرحلة الثالثة: كود جوجل 2FA
-  Future<void> _processPhase3() async {
-    if (_googleOtpCtrl.text.isEmpty) return;
+  Future<void> _handle2FA() async {
+    if (_googleAuthCtrl.text.isEmpty) return;
     setState(() => _isLoading = true);
     try {
-      final res = await ApiEngine().verifyGoogle(_authTicket, _googleOtpCtrl.text);
+      final res = await ApiEngine().verifyGoogle(_authTicket, _googleAuthCtrl.text);
       if (res.statusCode == 200 && res.data['data']['status'] == 'authenticated') {
-        _showToast(res.data['message'], EliteColors.success);
-        await _saveTokenAndEnter(res.data);
+        _navigateToDashboard();
       }
-    } on DioException catch (e) {
-      _showToast(e.response?.data['message'] ?? 'كود جوجل غير صحيح', EliteColors.danger);
+    } catch (e) {
+      _showError('رمز المصادقة الثنائية غير صحيح');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _saveTokenAndEnter(Map<String, dynamic> data) async {
-    await ApiEngine().storage.write(key: 'jwt_token', value: data['data']['token']);
-    await ApiEngine().storage.write(key: 'admin_name', value: data['data']['user']['name']);
-    if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
-  }
-
-  // بناء النوافذ المتغيرة
-  Widget _buildPhase1() {
-    return Column(
-      key: const ValueKey(0),
-      children: [
-        const Icon(Icons.shield, size: 60, color: EliteColors.goldPrimary),
-        const SizedBox(height: 20),
-        Text('البوابة السيادية', style: GoogleFonts.cairo(fontSize: 26, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 30),
-        GlassInput(controller: _userCtrl, label: 'معرف النظام', icon: Icons.person),
-        const SizedBox(height: 20),
-        GlassInput(controller: _passCtrl, label: 'مفتاح التشفير', icon: Icons.vpn_key, isPassword: true, obscureText: _obscure, onTogglePassword: () => setState(() => _obscure = !_obscure)),
-        const SizedBox(height: 40),
-        EliteButton(text: 'فحص البيانات', isLoading: _isLoading, onPressed: _processPhase1),
-      ],
-    );
-  }
-
-  Widget _buildPhase2() {
-    return Column(
-      key: const ValueKey(1),
-      children: [
-        const Icon(Icons.mark_email_read, size: 60, color: EliteColors.goldPrimary),
-        const SizedBox(height: 20),
-        Text('المصادقة البريدية', style: GoogleFonts.cairo(fontSize: 26, fontWeight: FontWeight.bold)),
-        Text('تم إرسال كود OTP إلى بريدك', style: GoogleFonts.cairo(color: Colors.grey)),
-        const SizedBox(height: 30),
-        GlassInput(controller: _emailOtpCtrl, label: 'كود الإيميل (6 أرقام)', icon: Icons.dialpad, keyboardType: TextInputType.number),
-        const SizedBox(height: 40),
-        EliteButton(text: 'تأكيد الإيميل', isLoading: _isLoading, onPressed: _processPhase2),
-        const SizedBox(height: 20),
-        TextButton(onPressed: () => setState(() => _authPhase = 0), child: Text('إلغاء والعودة', style: GoogleFonts.cairo(color: EliteColors.danger))),
-      ],
-    );
-  }
-
-  Widget _buildPhase3() {
-    return Column(
-      key: const ValueKey(2),
-      children: [
-        const Icon(Icons.security_update_good, size: 60, color: EliteColors.goldPrimary),
-        const SizedBox(height: 20),
-        Text('المصادقة النهائية', style: GoogleFonts.cairo(fontSize: 26, fontWeight: FontWeight.bold)),
-        Text('أدخل كود Google Authenticator', style: GoogleFonts.cairo(color: Colors.grey)),
-        const SizedBox(height: 30),
-        GlassInput(controller: _googleOtpCtrl, label: 'كود التطبيق (6 أرقام)', icon: Icons.lock_clock, keyboardType: TextInputType.number),
-        const SizedBox(height: 40),
-        EliteButton(text: 'فـك الـتـشـفـيـر', isLoading: _isLoading, onPressed: _processPhase3),
-        const SizedBox(height: 20),
-        TextButton(onPressed: () => setState(() => _authPhase = 0), child: Text('إلغاء والعودة', style: GoogleFonts.cairo(color: EliteColors.danger))),
-      ],
-    );
+  void _navigateToDashboard() {
+    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const DashboardScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomPaint(
-        painter: EliteBackgroundPainter(),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(color: EliteColors.glassFill, border: Border.all(color: EliteColors.glassBorderLight), borderRadius: BorderRadius.circular(30)),
-                  // 🪄 الحركة السحرية لتغيير الشاشات في نفس المكان
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 600),
-                    transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: ScaleTransition(scale: animation, child: child)),
-                    child: _authPhase == 0 
-                        ? _buildPhase1() 
-                        : _authPhase == 1 
-                            ? _buildPhase2() 
-                            : _buildPhase3(),
-                  ),
-                ),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0B101E),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset('assets/logo.png', width: 100, height: 100, errorBuilder: (ctx, err, stack) => const Icon(Icons.account_balance, size: 80, color: Color(0xFFD4AF37))),
+                  const SizedBox(height: 16),
+                  Text('Al-Muhandis Pay', style: GoogleFonts.cairo(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFFD4AF37))),
+                  const SizedBox(height: 8),
+                  Text('بوابة تسجيل الدخول الآمن', style: GoogleFonts.cairo(fontSize: 14, color: Colors.grey.shade500)),
+                  const SizedBox(height: 48),
+
+                  if (_currentStep == 'login') ...[
+                    GlassInput(controller: _usernameCtrl, label: 'اسم المستخدم أو البريد الإلكتروني', icon: Icons.person_outline),
+                    const SizedBox(height: 16),
+                    GlassInput(controller: _passwordCtrl, label: 'كلمة المرور', icon: Icons.lock_outline, isPassword: true),
+                    const SizedBox(height: 32),
+                    EliteButton(text: 'تسجيل الدخول', isLoading: _isLoading, onPressed: _handleLogin),
+                  ],
+
+                  if (_currentStep == 'otp') ...[
+                    Text('التحقق عبر البريد الإلكتروني', style: GoogleFonts.cairo(fontSize: 18, color: Colors.white)),
+                    const SizedBox(height: 16),
+                    GlassInput(controller: _otpCtrl, label: 'رمز التحقق (OTP)', icon: Icons.mark_email_read_outlined, keyboardType: TextInputType.number),
+                    const SizedBox(height: 32),
+                    EliteButton(text: 'متابعة', isLoading: _isLoading, onPressed: _handleOtp),
+                  ],
+
+                  if (_currentStep == '2fa') ...[
+                    Text('المصادقة الثنائية (Google Authenticator)', style: GoogleFonts.cairo(fontSize: 18, color: Colors.white)),
+                    const SizedBox(height: 16),
+                    GlassInput(controller: _googleAuthCtrl, label: 'رمز المصادقة الثنائية', icon: Icons.security, keyboardType: TextInputType.number),
+                    const SizedBox(height: 32),
+                    EliteButton(text: 'دخول', isLoading: _isLoading, onPressed: _handle2FA),
+                  ],
+                ],
               ),
             ),
           ),

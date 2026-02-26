@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="al_muhandis_pay"
+        android:label="Al-Muhandis Pay"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

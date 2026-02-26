@@ -44,7 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
-    _inactivityTimer = Timer(const Duration(minutes: 2), _autoLogout);
+    _inactivityTimer = Timer(const Duration(minutes: 20), _autoLogout);
   }
 
   void _autoLogout() async {

@@ -6,20 +6,15 @@ class BiometricService {
 
   static Future<bool> authenticate({String reason = 'ضع بصمتك لتأكيد العملية المالية'}) async {
     try {
-      // التحقق من وجود بصمة مسجلة في الجهاز
       bool canCheck = await _auth.canCheckBiometrics;
       if (!canCheck) return true; // تجاوز إذا كان الجهاز لا يدعم البصمة
       
-      // الصيغة الكلاسيكية المتوافقة مع جميع الإصدارات
+      // 🛡️ الصيغة المجردة والآمنة 100% التي يقبلها أي إصدار
       return await _auth.authenticate(
         localizedReason: reason,
-        useErrorDialogs: true,
-        stickyAuth: true,
-        biometricOnly: false,
       );
-    } on PlatformException catch (e) {
-      if (e.code == 'LockedOut' || e.code == 'PermanentlyLockedOut') return false;
-      return false;
+    } on PlatformException catch (_) {
+      return false; // فشل أو إلغاء البصمة
     }
   }
 

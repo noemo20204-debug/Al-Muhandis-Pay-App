@@ -1,12 +1,14 @@
 import 'statement_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/elite_theme.dart';
 import '../services/api_engine.dart';
 import '../widgets/elite_button.dart';
 import 'login_screen.dart';
 import 'transfer_screen.dart';
+import 'deposit_screen.dart'; // 👈 إضافة شاشة الإيداع السيادية
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,7 +24,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   bool _hideBalance = false;
   Timer? _inactivityTimer;
 
-  // محركات الأنيميشن البنكية
   late AnimationController _cardAnimCtrl;
   late Animation<Offset> _cardSlide;
   late AnimationController _listAnimCtrl;
@@ -41,7 +42,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     _listAnimCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
   }
 
-  // 🛡️ حماية بنكية: تسجيل خروج تلقائي بعد دقيقتين من الخمول
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
     _inactivityTimer = Timer(const Duration(minutes: 2), _autoLogout);
@@ -120,7 +120,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               _buildActionBtn(Icons.send_rounded, 'تحويل', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransferScreen()))),
-                              _buildActionBtn(Icons.account_balance_wallet, 'تغذية', () {}),
+                              
+                              // 👇 تم ربط زر الإيداع مع إضافة الاهتزاز البنكي 👇
+                              _buildActionBtn(Icons.account_balance_wallet, 'تغذية', () {
+                                HapticFeedback.mediumImpact();
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const DepositScreen()));
+                              }),
+
                               _buildActionBtn(Icons.history, 'السجل', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StatementScreen()))),
                               _buildActionBtn(Icons.qr_code_scanner, 'مسح', () {}),
                             ],
@@ -197,7 +203,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       children: List.generate(_txs.length, (index) {
         final tx = _txs[index];
         bool isCredit = tx['entry_type'] == 'credit';
-        // حركات ظهور متتالية للقائمة
         final Animation<double> anim = CurvedAnimation(parent: _listAnimCtrl, curve: Interval(index / _txs.length, 1.0, curve: Curves.easeOut));
         return FadeTransition(
           opacity: anim,
@@ -234,7 +239,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 }
 
-// 🪄 تأثير الوميض البنكي أثناء التحميل (Shimmer)
 class _BankShimmerCard extends StatefulWidget {
   const _BankShimmerCard();
   @override

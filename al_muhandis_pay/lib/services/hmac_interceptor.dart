@@ -9,7 +9,10 @@ class HmacInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final String method = options.method.toUpperCase();
-    final String path = options.path;
+    
+    // 🔥 الإصلاح الأمني الجذري: استخدام المسار الكامل ليتطابق تماماً مع السيرفر
+    final String path = options.uri.path; 
+    
     final String timestamp = options.headers['X-Request-Timestamp']?.toString() ?? '';
     final String nonce = options.headers['X-Request-Nonce']?.toString() ?? '';
 
@@ -24,9 +27,8 @@ class HmacInterceptor extends Interceptor {
 
     final String signingString = [method, path, bodyString, timestamp, nonce].join('|');
     final hmacSha256 = Hmac(sha256, utf8.encode(_secretKey));
-    final digest = hmacSha256.convert(utf8.encode(signingString));
     
-    options.headers['X-HMAC-Signature'] = digest.toString();
+    options.headers['X-HMAC-Signature'] = hmacSha256.convert(utf8.encode(signingString)).toString();
     options.headers['X-Body-Hash'] = sha256.convert(utf8.encode(bodyString)).toString();
 
     handler.next(options);

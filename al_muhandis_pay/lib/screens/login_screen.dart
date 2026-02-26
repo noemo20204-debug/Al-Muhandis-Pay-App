@@ -480,7 +480,7 @@ class _OrbitalPainter extends CustomPainter {
       canvas.save();
       canvas.translate(cx, cy);
       canvas.rotate(progress * 2 * pi * (i.isEven ? 1 : -1) * 0.3);
-      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: r * 2, height: r * 1.2));
+      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: r * 2, height: r * 1.2), paint);
       canvas.restore();
     }
 

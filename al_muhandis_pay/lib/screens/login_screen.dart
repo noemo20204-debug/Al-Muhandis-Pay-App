@@ -6,8 +6,7 @@ import '../services/api_engine.dart';
 import 'dashboard_screen.dart';
 
 /// ════════════════════════════════════════════════════════════════
-///  Al-Muhandis Pay — شاشة الدخول السيادية المظلمة v3
-///  الملف: lib/screens/login_screen.dart
+///  Al-Muhandis Pay — شاشة الدخول السيادية المظلمة (معدلة)
 /// ════════════════════════════════════════════════════════════════
 
 class _C {
@@ -81,9 +80,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
-      final res = await ApiEngine().dio.post('/login', data: {
-        'username': username, 'password': password,
-      });
+      // ⚠️ استخدام المحرك الأصلي بدلاً من الطلب المباشر
+      final res = await ApiEngine().login(username, password);
 
       if (res.statusCode == 200) {
         final data = res.data['data'] ?? res.data;
@@ -121,9 +119,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
 
     try {
-      final res = await ApiEngine().dio.post('/verify-email-otp', data: {
-        'auth_ticket': _authTicket, 'email_otp': otp,
-      });
+      // ⚠️ استخدام المحرك الأصلي
+      final res = await ApiEngine().verifyEmail(_authTicket ?? '', otp);
 
       if (res.statusCode == 200) {
         final data = res.data['data'] ?? res.data;
@@ -146,16 +143,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Future<void> _submitGoogle2fa() async {
     final code = _googleCtrl.text.trim();
     if (code.isEmpty || code.length != 6) {
-      _showError('الرجاء إدخال رمز Google Authenticator المكوّن من 6 أرقام.');
+      _showError('الرجاء إدخال رمز المصادقة المكوّن من 6 أرقام.');
       return;
     }
 
     setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
 
     try {
-      final res = await ApiEngine().dio.post('/verify-google-2fa', data: {
-        'auth_ticket': _authTicket, 'google_code': code,
-      });
+      // ⚠️ استخدام المحرك الأصلي
+      final res = await ApiEngine().verifyGoogle(_authTicket ?? '', code);
 
       if (res.statusCode == 200) {
         final data = res.data['data'] ?? res.data;
@@ -211,7 +207,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         backgroundColor: _C.nightBg,
         body: Stack(
           children: [
-            // الخلفية المدارية
             const _OrbitalBackground(),
 
             SafeArea(
@@ -225,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       children: [
                         const SizedBox(height: 30),
 
-                        // ═══ الشعار النابض ═══
+                        // ═══ الشعار النابض (اللوجو الخاص بك) ═══
                         _buildPulsingLogo(),
                         const SizedBox(height: 20),
 
@@ -234,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         Text(_phaseSubtitle, style: GoogleFonts.cairo(fontSize: 13, color: _C.textMuted)),
                         const SizedBox(height: 36),
 
-                        // ═══ مؤشر المراحل ═══
+                        // ═══ مؤشر المراحل بالأيقونات ═══
                         _buildPhaseStepper(),
                         const SizedBox(height: 28),
 
@@ -263,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Icon(Icons.lock_outline, size: 12, color: _C.textMuted),
                           const SizedBox(width: 6),
-                          Text('محمي بتشفير عسكري AES-256', style: GoogleFonts.cairo(fontSize: 11, color: _C.textMuted)),
+                          Text('نظام محمي بتشفير AES-256', style: GoogleFonts.cairo(fontSize: 11, color: _C.textMuted)),
                         ]),
                         const SizedBox(height: 20),
                       ],
@@ -283,48 +278,70 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       animation: _pulseAnim,
       builder: (context, child) => Opacity(opacity: _pulseAnim.value, child: child),
       child: Container(
-        width: 80, height: 80,
+        width: 85, height: 85,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const LinearGradient(colors: [_C.goldPrimary, _C.goldDark]),
           boxShadow: [BoxShadow(color: _C.goldPrimary.withOpacity(0.25), blurRadius: 30, spreadRadius: 2)],
         ),
-        child: const Icon(Icons.shield_outlined, color: Colors.black, size: 36),
+        child: Padding(
+          padding: const EdgeInsets.all(3.0),
+          child: Container(
+            decoration: const BoxDecoration(shape: BoxShape.circle, color: _C.nightBg),
+            child: Center(
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/logo.png',
+                  width: 55, height: 55, fit: BoxFit.cover,
+                  errorBuilder: (ctx, err, stack) => const Icon(Icons.account_balance, color: _C.goldPrimary, size: 36),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
   String get _phaseSubtitle {
     switch (_phase) {
-      case 'credentials': return 'أدخل بيانات الاعتماد للدخول إلى المنظومة';
+      case 'credentials': return 'بوابة الدخول الآمن للنظام المالي';
       case 'email_otp':   return 'تم إرسال رمز التحقق إلى بريدك الإلكتروني';
-      case 'google_2fa':  return 'أدخل الرمز من تطبيق Google Authenticator';
+      case 'google_2fa':  return 'أدخل الرمز من تطبيق المصادقة الثنائية';
       default: return '';
     }
   }
 
   Widget _buildPhaseStepper() {
-    final phases = ['بيانات الدخول', 'رمز الإيميل', 'المصادقة'];
+    final phases = [
+      {'icon': Icons.lock_outline},
+      {'icon': Icons.mail_outline},
+      {'icon': Icons.security},
+    ];
     final idx = _phase == 'credentials' ? 0 : _phase == 'email_otp' ? 1 : 2;
 
     return Row(
       children: List.generate(phases.length, (i) {
         final bool active = i <= idx;
         final bool current = i == idx;
+        final iconData = phases[i]['icon'] as IconData;
+
         return Expanded(
           child: Row(children: [
             if (i > 0) Expanded(child: Container(height: 1.5, color: active ? _C.goldPrimary : _C.glassBorder)),
             Container(
-              width: 28, height: 28,
+              width: 34, height: 34,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: current ? _C.goldPrimary : active ? _C.goldPrimary.withOpacity(0.3) : _C.glassBorder,
                 border: current ? Border.all(color: _C.goldLight, width: 2) : null,
               ),
               child: Center(
-                child: active && !current
-                    ? const Icon(Icons.check, size: 14, color: _C.goldPrimary)
-                    : Text('${i + 1}', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: current ? Colors.black : _C.textMuted)),
+                child: Icon(
+                  active && !current ? Icons.check : iconData,
+                  size: 16,
+                  color: current ? Colors.black : active ? _C.goldPrimary : _C.textMuted,
+                ),
               ),
             ),
           ]),
@@ -337,7 +354,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     switch (_phase) {
       case 'credentials':
         return Column(children: [
-          _field(_usernameCtrl, 'اسم المستخدم أو البريد', Icons.person_outline, keyboardType: TextInputType.emailAddress),
+          _field(_usernameCtrl, 'اسم المستخدم', Icons.person_outline, keyboardType: TextInputType.emailAddress),
           const SizedBox(height: 16),
           _field(_passwordCtrl, 'كلمة المرور', Icons.lock_outline, obscure: _obscurePassword,
             suffixIcon: IconButton(
@@ -348,14 +365,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
       case 'email_otp':
         return Column(children: [
-          _infoBox(Icons.mail_outline, 'تحقق من بريدك الإلكتروني'),
+          _infoBox(Icons.mail_outline, 'تحقق من صندوق الوارد (Inbox) أو المهملات (Spam)'),
           const SizedBox(height: 16),
           _field(_otpCtrl, 'رمز التحقق (6 أرقام)', Icons.pin_outlined, keyboardType: TextInputType.number, maxLength: 6, centered: true),
         ]);
 
       case 'google_2fa':
         return Column(children: [
-          _infoBox(Icons.security, 'افتح تطبيق Google Authenticator'),
+          _infoBox(Icons.security, 'افتح تطبيق المصادقة الثنائية في هاتفك'),
           const SizedBox(height: 16),
           _field(_googleCtrl, 'رمز المصادقة', Icons.shield_outlined, keyboardType: TextInputType.number, maxLength: 6, centered: true),
         ]);
@@ -403,8 +420,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     String label; IconData icon;
     switch (_phase) {
       case 'credentials': label = 'تسجيل الدخول'; icon = Icons.login_rounded; break;
-      case 'email_otp':   label = 'تحقق من الرمز'; icon = Icons.verified_outlined; break;
-      case 'google_2fa':  label = 'فك التشفير السيادي'; icon = Icons.shield_outlined; break;
+      case 'email_otp':   label = 'التحقق من الرمز'; icon = Icons.verified_outlined; break;
+      case 'google_2fa':  label = 'تأكيد الدخول'; icon = Icons.security; break;
       default: label = 'متابعة'; icon = Icons.arrow_forward;
     }
 
@@ -480,7 +497,7 @@ class _OrbitalPainter extends CustomPainter {
       canvas.save();
       canvas.translate(cx, cy);
       canvas.rotate(progress * 2 * pi * (i.isEven ? 1 : -1) * 0.3);
-      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: r * 2, height: r * 1.2), paint);
+      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: r * 2, height: r * 1.2));
       canvas.restore();
     }
 

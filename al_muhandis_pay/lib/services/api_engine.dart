@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'hmac_interceptor.dart';
-import 'ssl_pinning_service.dart';
 
 class ApiEngine {
   static final ApiEngine _instance = ApiEngine._internal();
@@ -25,6 +23,7 @@ class ApiEngine {
       },
     ));
 
+    // ─── الدرع 1: المصادقة و Anti-Replay ───
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final token = await storage.read(key: 'jwt_token');
@@ -39,11 +38,43 @@ class ApiEngine {
       },
     ));
 
+    // ─── الدرع 2: التوقيع المشفر (HMAC) ───
     dio.interceptors.add(HmacInterceptor(secretKey: _hmacSecret));
   }
 
   Future<void> clearAuth() async {
     await storage.delete(key: 'jwt_token');
     await storage.delete(key: 'admin_name');
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  العمليات الأساسية (التي تم استردادها)
+  // ═══════════════════════════════════════════════════════════
+
+  Future<Response> login(String username, String password) async {
+    return await dio.post('/login', data: {'username': username, 'password': password});
+  }
+
+  Future<Response> verifyEmail(String ticket, String code) async {
+    return await dio.post('/verify-email', data: {'auth_ticket': ticket, 'email_otp': code});
+  }
+
+  Future<Response> verifyGoogle(String ticket, String code) async {
+    return await dio.post('/verify-google', data: {'auth_ticket': ticket, 'google_code': code});
+  }
+
+  Future<Map<String, dynamic>> sendTransfer(String receiverId, double amount, String description) async {
+    try {
+      final res = await dio.post('/transfer', data: {
+        'receiver_id': receiverId,
+        'amount': amount,
+        'description': description
+      });
+      return {'success': true, 'message': res.data['message'] ?? 'تم التحويل بنجاح'};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.response?.data['message'] ?? 'فشل التحويل'};
+    } catch (e) {
+      return {'success': false, 'message': 'حدث خطأ أثناء الاتصال'};
+    }
   }
 }

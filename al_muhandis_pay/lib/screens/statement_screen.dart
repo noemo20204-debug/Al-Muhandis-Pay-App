@@ -1,12 +1,15 @@
+import 'dart:ui' as ui;
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/transaction_model.dart';
 import '../services/statement_service.dart';
 
-// ═══════════════════════════════════════════════════════════
-//  Al-Muhandis Elite — ألوان الهوية السيادية
-// ═══════════════════════════════════════════════════════════
 class _EliteColors {
   static const Color nightBg     = Color(0xFF0B101E);
   static const Color cardBg      = Color(0xFF161C2D);
@@ -124,142 +127,201 @@ class _StatementScreenState extends State<StatementScreen> {
     if (picked != null) { setState(() { if (isStart) _startDate = picked; else _endDate = picked; }); }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  الإيصال البنكي الفخم (Modal Bottom Sheet)
-  // ═══════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════
+  //  شاشة الإيصال المنبثقة + التصوير والمشاركة
+  // ════════════════════════════════════════════════════════
   void _showReceipt(TransactionModel tx) {
     final bool isCredit = tx.isCredit;
     final Color amountColor = isCredit ? _EliteColors.success : _EliteColors.danger;
+    
+    // مفتاح الكاميرا لالتقاط صورة الإيصال
+    final GlobalKey receiptKey = GlobalKey();
+    bool isSharing = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          decoration: BoxDecoration(
-            color: _EliteColors.nightBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28), bottom: Radius.circular(20)),
-            border: Border.all(color: _EliteColors.goldPrimary.withOpacity(0.3), width: 1),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // المقبض العلوي
-              Container(
-                margin: const EdgeInsets.only(top: 12), width: 50, height: 4,
-                decoration: BoxDecoration(color: _EliteColors.goldPrimary.withOpacity(0.4), borderRadius: BorderRadius.circular(2)),
-              ),
-
-              // رأس الإيصال
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 64, height: 64,
-                      decoration: BoxDecoration(color: amountColor.withOpacity(0.12), shape: BoxShape.circle, border: Border.all(color: amountColor.withOpacity(0.3), width: 1.5)),
-                      child: Icon(isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, color: amountColor, size: 32),
+                    // 📸 الجزء الذي سيتم تصويره
+                    RepaintBoundary(
+                      key: receiptKey,
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        decoration: BoxDecoration(
+                          color: _EliteColors.nightBg,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: _EliteColors.goldPrimary.withOpacity(0.4), width: 1.5),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 16), width: 50, height: 4,
+                              decoration: BoxDecoration(color: _EliteColors.goldPrimary.withOpacity(0.4), borderRadius: BorderRadius.circular(2)),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 64, height: 64,
+                                    decoration: BoxDecoration(color: amountColor.withOpacity(0.12), shape: BoxShape.circle, border: Border.all(color: amountColor.withOpacity(0.3), width: 1.5)),
+                                    child: Icon(isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, color: amountColor, size: 32),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(tx.categoryLabel, style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  const SizedBox(height: 4),
+                                  Text(tx.categoryLabelEn, style: GoogleFonts.cairo(fontSize: 12, color: Colors.grey.shade500, letterSpacing: 3)),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    '${isCredit ? '+' : '-'} ${tx.amount.toStringAsFixed(2)} USDT',
+                                    style: GoogleFonts.cairo(fontSize: 34, fontWeight: FontWeight.bold, color: amountColor),
+                                  ),
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Row(
+                                children: List.generate(40, (i) => Expanded(
+                                  child: Container(height: 1, color: i.isEven ? _EliteColors.goldPrimary.withOpacity(0.3) : Colors.transparent),
+                                )),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                              child: Column(
+                                children: [
+                                  _receiptRow('رقم العملية', tx.shortTxId),
+                                  _receiptRow('نوع القيد', tx.isCredit ? 'دائن (Credit)' : 'مدين (Debit)'),
+                                  _receiptRow('الحالة', tx.txStatus == 'completed' ? 'مكتملة ✅' : tx.txStatus),
+                                  _receiptRow('التاريخ', DateFormat('yyyy/MM/dd').format(tx.createdAt)),
+                                  _receiptRow('الوقت', DateFormat('HH:mm:ss').format(tx.createdAt)),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(color: _EliteColors.cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _EliteColors.glassBorder)),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.fingerprint, color: _EliteColors.goldPrimary, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Transaction ID', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade500)),
+                                        const SizedBox(height: 2),
+                                        Text(tx.transactionId, style: GoogleFonts.sourceCodePro(fontSize: 10, color: _EliteColors.goldLight, letterSpacing: 0.5), overflow: TextOverflow.ellipsis),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(24, 4, 24, 4),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(color: _EliteColors.cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _EliteColors.glassBorder)),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.lock_outline, color: _EliteColors.goldPrimary, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Receipt Hash', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade500)),
+                                        const SizedBox(height: 2),
+                                        Text(tx.receiptId.isNotEmpty ? tx.receiptId : 'N/A', style: GoogleFonts.sourceCodePro(fontSize: 10, color: _EliteColors.goldLight, letterSpacing: 0.8), overflow: TextOverflow.ellipsis),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.security, color: _EliteColors.goldPrimary, size: 22),
+                                  const SizedBox(height: 6),
+                                  Text('Al-Muhandis Pay', style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: _EliteColors.goldPrimary)),
+                                  Text('Secured Transaction Receipt', style: GoogleFonts.cairo(fontSize: 11, color: Colors.grey.shade600)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    // 📤 زر المشاركة
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _EliteColors.goldPrimary,
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 5,
+                          ),
+                          onPressed: isSharing ? null : () async {
+                            setModalState(() => isSharing = true);
+                            try {
+                              // التقاط الصورة بدقة عالية
+                              RenderRepaintBoundary boundary = receiptKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+                              ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+                              ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+                              Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+                              // حفظ الصورة في ملف مؤقت
+                              final directory = await getTemporaryDirectory();
+                              final imagePath = await File('${directory.path}/AlMuhandis_Receipt_${tx.shortTxId}.png').create();
+                              await imagePath.writeAsBytes(pngBytes);
+
+                              // مشاركة الصورة
+                              await Share.shareXFiles(
+                                [XFile(imagePath.path)], 
+                                text: 'إيصال معاملة من تطبيق المهندس Pay\nرقم العملية: ${tx.shortTxId}'
+                              );
+                            } catch (e) {
+                              debugPrint('Error sharing receipt: $e');
+                            } finally {
+                              setModalState(() => isSharing = false);
+                            }
+                          },
+                          icon: isSharing 
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                              : const Icon(Icons.share, size: 24),
+                          label: Text(
+                            isSharing ? 'جاري التجهيز...' : 'مشاركة الإيصال', 
+                            style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold)
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    Text(tx.categoryLabel, style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                    const SizedBox(height: 4),
-                    Text(tx.categoryLabelEn, style: GoogleFonts.cairo(fontSize: 12, color: Colors.grey.shade500, letterSpacing: 3)),
-                    const SizedBox(height: 20),
-                    Text(
-                      '${isCredit ? '+' : '-'} ${tx.amount.toStringAsFixed(2)} USDT',
-                      style: GoogleFonts.cairo(fontSize: 36, fontWeight: FontWeight.bold, color: amountColor),
-                    ),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-
-              // الخط الفاصل المنقّط
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: List.generate(40, (i) => Expanded(
-                    child: Container(height: 1, color: i.isEven ? _EliteColors.goldPrimary.withOpacity(0.3) : Colors.transparent),
-                  )),
-                ),
-              ),
-
-              // تفاصيل الإيصال
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-                child: Column(
-                  children: [
-                    _receiptRow('رقم العملية', tx.shortTxId),
-                    _receiptRow('نوع القيد', tx.isCredit ? 'دائن (Credit)' : 'مدين (Debit)'),
-                    _receiptRow('الحالة', tx.txStatus == 'completed' ? 'مكتملة ✅' : tx.txStatus),
-                    _receiptRow('التاريخ', DateFormat('yyyy/MM/dd').format(tx.createdAt)),
-                    _receiptRow('الوقت', DateFormat('HH:mm:ss').format(tx.createdAt)),
-                  ],
-                ),
-              ),
-
-              // رقم الإيصال المشفّر (UUID كامل)
-              Container(
-                margin: const EdgeInsets.fromLTRB(24, 8, 24, 4),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: _EliteColors.cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _EliteColors.glassBorder)),
-                child: Row(
-                  children: [
-                    const Icon(Icons.fingerprint, color: _EliteColors.goldPrimary, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Transaction ID', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade500)),
-                          const SizedBox(height: 2),
-                          Text(tx.transactionId, style: GoogleFonts.sourceCodePro(fontSize: 10, color: _EliteColors.goldLight, letterSpacing: 0.5), overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Receipt ID (MD5 Hash)
-              Container(
-                margin: const EdgeInsets.fromLTRB(24, 4, 24, 4),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: _EliteColors.cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _EliteColors.glassBorder)),
-                child: Row(
-                  children: [
-                    const Icon(Icons.lock_outline, color: _EliteColors.goldPrimary, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Receipt Hash', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade500)),
-                          const SizedBox(height: 2),
-                          Text(tx.receiptId.isNotEmpty ? tx.receiptId : 'N/A', style: GoogleFonts.sourceCodePro(fontSize: 10, color: _EliteColors.goldLight, letterSpacing: 0.8), overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ختم الإيصال
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                child: Column(
-                  children: [
-                    const Icon(Icons.security, color: _EliteColors.goldPrimary, size: 20),
-                    const SizedBox(height: 6),
-                    Text('Al-Muhandis Pay', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: _EliteColors.goldPrimary)),
-                    Text('Secured Transaction Receipt', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade600)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -278,9 +340,6 @@ class _StatementScreenState extends State<StatementScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  البناء الرئيسي
-  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Directionality(

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart' show DateFormat;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../models/transaction_model.dart';
 import '../services/statement_service.dart';
 
@@ -189,12 +190,23 @@ class _StatementScreenState extends State<StatementScreen> {
                               padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
                               child: Column(
                                 children: [
-                                  const Icon(Icons.security, color: _EliteColors.goldPrimary, size: 20), const SizedBox(height: 6),
+                                  Image.asset('assets/logo.png', width: 24, height: 24, errorBuilder: (c, e, s) => const Icon(Icons.security, color: _EliteColors.goldPrimary, size: 20)), const SizedBox(height: 6),
                                   Text('Al-Muhandis Pay', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: _EliteColors.goldPrimary)),
                                   Text('Secured Transaction Receipt', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade600)),
                                 ],
                               ),
                             ),
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                              child: QrImageView(
+                                data: 'https://al-muhandis.com/receipt?id=${tx.transactionId}',
+                                version: QrVersions.auto,
+                                size: 80.0,
+                              ),
+                            ),
+
                             // 👈 الملاحظة القانونية أسفل الصورة (تظهر في صورة المشاركة)
                             Container(
                               width: double.infinity,

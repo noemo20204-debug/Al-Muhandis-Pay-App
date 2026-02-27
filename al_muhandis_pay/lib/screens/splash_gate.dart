@@ -11,8 +11,8 @@ class SplashGate extends StatefulWidget {
 }
 class _SplashGateState extends State<SplashGate> {
   @override
-  void initState() { super.initState(); _checkAuth(); }
-    ApiEngine().pingForVersionCheck();
+  void initState() {
+    ApiEngine().pingForVersionCheck(); super.initState(); _checkAuth(); }
   
   Future<void> _checkAuth() async {
     final token = await ApiEngine().storage.read(key: 'jwt_token');

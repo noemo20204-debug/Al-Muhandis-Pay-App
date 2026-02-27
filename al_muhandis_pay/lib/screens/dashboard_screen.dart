@@ -64,26 +64,24 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   // 📡 محرك التزامن السيادي (Sovereign Sync Engine)
   
   
+  
   Future<void> _fetchSovereignData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final response = await ApiEngine().dio.get('/dashboard');
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (mounted) {
-          setState(() {
-            _userName = data['user_name'] ?? 'المهندس';
-            _balance = double.tryParse(data['balance'].toString()) ?? 0.0;
-            _isLoading = false;
-          });
-        }
+      if (response.statusCode == 200 && mounted) {
+        setState(() {
+          _userName = response.data['user_name'] ?? 'المهندس';
+          _balance = double.tryParse(response.data['balance'].toString()) ?? 0.0;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
-      // الـ ApiEngine سيتكفل بالـ 426 تلقائياً ويفتح شاشة التحديث
     }
   }
+
 
 
 

@@ -8,6 +8,7 @@ import '../services/api_engine.dart';
 import '../widgets/elite_button.dart';
 import 'login_screen.dart';
 import 'transfer_screen.dart';
+import 'withdrawal_screen.dart';
 import 'deposit_screen.dart'; // 👈 إضافة شاشة الإيداع السيادية
 
 class DashboardScreen extends StatefulWidget {
@@ -128,7 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                               }),
 
                               _buildActionBtn(Icons.history, 'السجل', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StatementScreen()))),
-                              _buildActionBtn(Icons.qr_code_scanner, 'مسح', () {}),
+                              _buildActionBtn(Icons.outbox_rounded, 'سحب', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WithdrawalScreen()))),
                             ],
                           ),
                           const SizedBox(height: 40),

@@ -65,10 +65,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   
   
   
+  
   Future<void> _fetchSovereignData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
+      // استخدام محركك العالمي لجلب البيانات لضمان إرسال الـ jwt_token والـ HMAC
       final response = await ApiEngine().dio.get('/dashboard');
       if (response.statusCode == 200 && mounted) {
         setState(() {
@@ -79,8 +81,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+      // المحرك (ApiEngine) سيتكفل بإظهار شاشة التحديث إذا لزم الأمر
     }
   }
+
 
 
 

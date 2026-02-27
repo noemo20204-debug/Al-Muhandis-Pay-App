@@ -1,3 +1,5 @@
+import '../services/api_engine.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import "package:shared_preferences/shared_preferences.dart";
 import 'dart:math';
 import 'dart:ui';
@@ -61,49 +63,28 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   // 📡 محرك التزامن السيادي (Sovereign Sync Engine)
   
+  
   Future<void> _fetchSovereignData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      String userToken = prefs.getString('jwt_token') ?? prefs.getString('token') ?? prefs.getString('auth_token') ?? '';
-      
-      final response = await http.get(
-        Uri.parse('https://al-muhandis.com/api/dashboard'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $userToken',
-          'X-App-Version': '1.0.0',
-        },
-      ).timeout(const Duration(seconds: 10));
-
+      final response = await ApiEngine().dio.get('/dashboard');
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         if (mounted) {
           setState(() {
             _userName = data['user_name'] ?? 'المهندس';
-            _accountNumber = data['account_number'] ?? 'AMP-XXXX';
             _balance = double.tryParse(data['balance'].toString()) ?? 0.0;
-            if (data['recent_transactions'] != null) {
-              _recentActivity = List<Map<String, dynamic>>.from(data['recent_transactions']);
-            }
             _isLoading = false;
           });
         }
-      } else {
-        throw Exception("Status: ${response.statusCode}");
       }
     } catch (e) {
-      print("Sync Error: $e");
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("خطأ في الخزنة: ${response.statusCode}", style: TextStyle(fontFamily: 'Cairo')))
-        );
-      }
+      if (mounted) setState(() => _isLoading = false);
+      // الـ ApiEngine سيتكفل بالـ 426 تلقائياً ويفتح شاشة التحديث
     }
   }
+
 
 
   void _initAnimations() {

@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import 'screens/splash_gate.dart';
+import 'services/api_engine.dart';
 
 void main() {
-  runApp(const AlMuhandisPay());
+  // 🔑 إنشاء المفتاح المركزي للتحكم في مسارات التطبيق
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  
+  // 🔌 ربط المفتاح بمحرك الـ ApiEngine السيادي
+  ApiEngine().setNavigatorKey(navigatorKey);
+  
+  runApp(AlMuhandisPay(navKey: navigatorKey));
 }
 
 class AlMuhandisPay extends StatelessWidget {
-  const AlMuhandisPay({super.key});
+  final GlobalKey<NavigatorState> navKey;
+  const AlMuhandisPay({super.key, required this.navKey});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Al-Muhandis Pay',
       debugShowCheckedModeBanner: false,
+      // 🛡️ تفعيل الربط لكي تعمل شاشة التحديث الإجباري من أي مكان
+      navigatorKey: navKey,
       theme: ThemeData(
-        // 🖋️ تفعيل خط Cairo السيادي أوفلاين
         fontFamily: 'Cairo',
         primaryColor: const Color(0xFF00101D),
         scaffoldBackgroundColor: const Color(0xFF00101D),
@@ -22,7 +31,6 @@ class AlMuhandisPay extends StatelessWidget {
           secondary: const Color(0xFFd4af37),
           primary: const Color(0xFFd4af37),
         ),
-        // تخصيص النصوص لتستخدم الخط الجديد تلقائياً
         textTheme: const TextTheme(
           bodyLarge: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
           bodyMedium: TextStyle(color: Colors.white, fontFamily: 'Cairo'),

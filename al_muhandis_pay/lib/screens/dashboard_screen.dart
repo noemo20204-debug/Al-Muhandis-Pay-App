@@ -60,62 +60,51 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   // 📡 محرك التزامن السيادي (Sovereign Sync Engine)
+  
   Future<void> _fetchSovereignData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      // ⚠️ ضع التوكن الخاص بالمستخدم هنا (يتم جلبه من التخزين المحلي عادة)
       final prefs = await SharedPreferences.getInstance();
-      String userToken = prefs.getString('token') ?? prefs.getString('auth_token') ?? ''; 
-
+      String userToken = prefs.getString('token') ?? prefs.getString('auth_token') ?? '';
+      
       final response = await http.get(
-        // الرابط الذي يربطنا بملف MobileApiController.php
-        Uri.parse('https://al-muhandis.com/api/dashboard'), 
+        Uri.parse('https://al-muhandis.com/api/dashboard'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $userToken', // الحارس الأمني
-          'X-App-Version': '1.0.0', // تصريح الدخول السيادي
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $userToken',
+          'X-App-Version': '1.0.0',
         },
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
-        setState(() {
-          // ربط المفاتيح القادمة من JSON بالواجهة
-          _userName = data['user_name'] ?? 'المهندس';
-          _accountNumber = data['account_number'] ?? 'AMP-0000-0000';
-          _balance = double.tryParse(data['balance'].toString()) ?? 0.00;
-          
-          // تنظيف وتجهيز العمليات الأخيرة
-          if (data['recent_transactions'] != null) {
-            _recentActivity = List<Map<String, dynamic>>.from(
-              data['recent_transactions'].map((tx) => {
-                'type': tx['type'],
-                'title': tx['title'],
-                'subtitle': tx['subtitle'],
-                'amount': double.tryParse(tx['amount'].toString()) ?? 0.0,
-                'date': tx['date'],
-                'icon': tx['type'] == 'CREDIT' ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-              })
-            );
-          }
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _userName = data['user_name'] ?? 'المهندس';
+            _accountNumber = data['account_number'] ?? 'AMP-XXXX';
+            _balance = double.tryParse(data['balance'].toString()) ?? 0.0;
+            if (data['recent_transactions'] != null) {
+              _recentActivity = List<Map<String, dynamic>>.from(data['recent_transactions']);
+            }
+            _isLoading = false;
+          });
+        }
       } else {
-        throw Exception("فشل في المصادقة أو جلب البيانات");
+        throw Exception("Status: ${response.statusCode}");
       }
     } catch (e) {
-      // في حال فشل الاتصال، نظهر رسالة خطأ ونضع بيانات احتياطية لكي لا ينهار التصميم
-      print("Error Syncing Data: $e");
-      setState(() {
-        _userName = 'غير متصل';
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("تعذر الاتصال بالخزنة المركزية", style: TextStyle(fontFamily: 'Cairo'))),
-      );
+      print("Sync Error: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("تعذر الاتصال بالخزنة المركزية", style: TextStyle(fontFamily: 'Cairo')))
+        );
+      }
     }
   }
+
 
   void _initAnimations() {
     _particleCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 30))..repeat();

@@ -4,30 +4,29 @@ import 'core/elite_theme.dart';
 import 'screens/splash_gate.dart';
 import 'services/api_engine.dart';
 
-// 🗝️ مفتاح الملاحة السيادي: يسمح لنا بالتحكم بالشاشات من أي مكان في التطبيق
 final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // ربط المفتاح بمحرك الاتصال قبل بدء تشغيل التطبيق
   ApiEngine().setNavigatorKey(globalNavigatorKey);
   runApp(const AlMuhandisEliteApp());
 }
 
 class AlMuhandisEliteApp extends StatefulWidget {
   const AlMuhandisEliteApp({super.key});
-
   @override
   State<AlMuhandisEliteApp> createState() => _AlMuhandisEliteAppState();
 }
 
-// إضافة مراقب حالة الهاتف (WidgetsBindingObserver)
 class _AlMuhandisEliteAppState extends State<AlMuhandisEliteApp> with WidgetsBindingObserver {
-  
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 🚀 الضربة الاستباقية: فحص الإصدار فور تشغيل التطبيق (بدون أي تدخل من العميل)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ApiEngine().pingForVersionCheck();
+    });
   }
 
   @override
@@ -36,7 +35,6 @@ class _AlMuhandisEliteAppState extends State<AlMuhandisEliteApp> with WidgetsBin
     super.dispose();
   }
 
-  // 📡 رادار العودة: يعمل فوراً عندما يفتح العميل التطبيق من الخلفية
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -47,7 +45,7 @@ class _AlMuhandisEliteAppState extends State<AlMuhandisEliteApp> with WidgetsBin
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: globalNavigatorKey, // زرع المفتاح هنا
+      navigatorKey: globalNavigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Al-Muhandis Pay Elite',
       theme: ThemeData(

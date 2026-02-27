@@ -58,6 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   @override
   void initState() {
+    _fetchSovereignData();
     super.initState();
     _initAnimations();
     _generateParticles();

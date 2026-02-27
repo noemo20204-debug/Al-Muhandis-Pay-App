@@ -89,4 +89,20 @@ class ApiEngine {
   Future<Response> verifyGoogle(String ticket, String code) async {
     return await dio.post('/verify-google', data: {'auth_ticket': ticket, 'google_code': code});
   }
+
+  // 💸 دالة التحويل السيادية
+  Future<Map<String, dynamic>> sendTransfer(String receiverId, double amount, String description) async {
+    try {
+      final res = await dio.post('/transfer', data: {
+        'receiver_id': receiverId,
+        'amount': amount,
+        'description': description
+      });
+      return {'success': true, 'message': res.data['message'] ?? 'تم التحويل بنجاح'};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.response?.data['message'] ?? 'فشل التحويل'};
+    } catch (e) {
+      return {'success': false, 'message': 'حدث خطأ أثناء الاتصال'};
+    }
+  }
 }

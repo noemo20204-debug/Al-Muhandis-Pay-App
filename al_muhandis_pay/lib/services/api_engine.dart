@@ -27,6 +27,7 @@ class ApiEngine {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        'X-Client-Platform': 'Al-Muhandis-Secure-Core',
         'X-App-Version': currentAppVersion,
       },
     ));

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/dashboard_screen.dart';
+import 'screens/splash_gate.dart';
 
 void main() {
   runApp(const AlMuhandisPay());
@@ -28,7 +28,7 @@ class AlMuhandisPay extends StatelessWidget {
           bodyMedium: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
         ),
       ),
-      home: const DashboardScreen(),
+      home: const SplashGate(),
     );
   }
 }

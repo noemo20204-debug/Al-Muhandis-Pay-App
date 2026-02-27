@@ -6,6 +6,11 @@ import 'dart:ui';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'transfer_screen.dart';
+import 'statement_screen.dart';
+import 'deposit_screen.dart';
+import 'withdrawal_screen.dart';
+
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'advanced_transfer_screen.dart';
@@ -270,3 +275,4 @@ class _ParticlePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ParticlePainter old) => true;
 }
+// تم تفعيل الأزرار السيادية Fri Feb 27 11:24:08 UTC 2026

@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -12,8 +11,11 @@ class ForceUpdateScreen extends StatelessWidget {
 
   Future<void> _launchUpdate() async {
     final uri = Uri.parse(updateUrl);
-    if (await canLaunchUrl(uri)) {
+    // 🚀 تجاوز حماية أندرويد 11 (canLaunchUrl) وفتح الرابط بالقوة
+    try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
     }
   }
 

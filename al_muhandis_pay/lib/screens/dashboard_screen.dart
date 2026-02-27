@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../services/api_engine.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import "package:shared_preferences/shared_preferences.dart";
@@ -73,22 +74,36 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   
   Future<void> _fetchSovereignData() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    setState(() { _isLoading = true; _userName = "يتم الاتصال بالخزنة..."; });
     try {
-      // استخدام محركك العالمي لجلب البيانات لضمان إرسال الـ jwt_token والـ HMAC
-      final response = await ApiEngine().dio.get('/dashboard');
+      final response = await ApiEngine().dio.get('/wallet');
       if (response.statusCode == 200 && mounted) {
+        final resData = response.data['data'] ?? response.data;
         setState(() {
-          _userName = response.data['user_name'] ?? 'المهندس';
-          _balance = double.tryParse(response.data['balance'].toString()) ?? 0.0;
+          _userName = "المهندس السيادي";
+          if (resData['wallet'] != null) {
+            _balance = double.tryParse(resData['wallet']['balance'].toString()) ?? 0.0;
+          }
+          _isLoading = false;
+        });
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(() {
+          _userName = "❌ خطأ سيرفر: ${e.response?.statusCode ?? 'مجهول'}";
           _isLoading = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-      // المحرك (ApiEngine) سيتكفل بإظهار شاشة التحديث إذا لزم الأمر
+      if (mounted) {
+        setState(() {
+          _userName = "❌ خطأ داخلي";
+          _isLoading = false;
+        });
+      }
     }
   }
+  
 
 
 

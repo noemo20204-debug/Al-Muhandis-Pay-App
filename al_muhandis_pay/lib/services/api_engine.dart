@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -36,7 +37,11 @@ class ApiEngine {
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await storage.read(key: 'jwt_token');
+        String? token = await storage.read(key: 'jwt_token');
+        if (token == null || token.isEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          token = prefs.getString('jwt_token') ?? prefs.getString('token') ?? prefs.getString('auth_token');
+        }
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }

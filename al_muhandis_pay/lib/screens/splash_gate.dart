@@ -1,4 +1,3 @@
-import '../core/app_version_guard.dart';
 import 'package:flutter/material.dart';
 import '../services/api_engine.dart';
 import '../core/elite_theme.dart';
@@ -13,6 +12,7 @@ class SplashGate extends StatefulWidget {
 class _SplashGateState extends State<SplashGate> {
   @override
   void initState() { super.initState(); _checkAuth(); }
+    ApiEngine().pingForVersionCheck();
   
   Future<void> _checkAuth() async {
     final token = await ApiEngine().storage.read(key: 'jwt_token');

@@ -66,7 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     setState(() => _isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      String userToken = prefs.getString('token') ?? prefs.getString('auth_token') ?? '';
+      String userToken = prefs.getString('jwt_token') ?? prefs.getString('token') ?? prefs.getString('auth_token') ?? '';
       
       final response = await http.get(
         Uri.parse('https://al-muhandis.com/api/dashboard'),
@@ -99,7 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("تعذر الاتصال بالخزنة المركزية", style: TextStyle(fontFamily: 'Cairo')))
+          SnackBar(content: Text("خطأ في الخزنة: ${response.statusCode}", style: TextStyle(fontFamily: 'Cairo')))
         );
       }
     }

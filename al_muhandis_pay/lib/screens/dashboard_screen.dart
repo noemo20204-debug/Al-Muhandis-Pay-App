@@ -127,60 +127,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 30),
 
-ClipRRect(
-  borderRadius: BorderRadius.circular(24),
-  child: BackdropFilter(
-    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-    child: Container(
-      padding: const EdgeInsets.all(26),
-      decoration: BoxDecoration(
-        gradient: EliteColors.glassGradient,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: EliteColors.glassBorderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'الرصيد الإجمالي',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _isLoading
-              ? const CircularProgressIndicator(color: EliteColors.goldPrimary)
-              : Text(
-                  'USDT ${_balance.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: EliteColors.goldPrimary,
-                    fontSize: 34,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
+                  // --- البطاقة الزجاجية (الخزنة) ---
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                      child: Container(
+                        padding: const EdgeInsets.all(26),
+                        decoration: BoxDecoration(
+                          gradient: EliteColors.glassGradient,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: EliteColors.glassBorderLight),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'الرصيد الإجمالي',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _isLoading
+                                ? const CircularProgressIndicator(color: EliteColors.goldPrimary)
+                                : Text(
+                                    'USDT ${_balance.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      color: EliteColors.goldPrimary,
+                                      fontSize: 34,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.1,
+                                    ),
+                                  ),
+                            const SizedBox(height: 28),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _walletId,
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    letterSpacing: 2,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const Icon(Icons.security, color: Colors.white54),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-          const SizedBox(height: 28),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _walletId,
-                style: const TextStyle(
-                  color: Colors.white54,
-                  letterSpacing: 2,
-                  fontSize: 13,
-                ),
-              ),
-              const Icon(Icons.security, color: Colors.white54),
-            ],
-          ),
-        ],
-      ),
-    ),
-  ),
-),
                   const SizedBox(height: 30),
 
                   // --- الأزرار الأربعة السيادية ---
@@ -188,9 +189,9 @@ ClipRRect(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildActionButton('تحويل', Icons.send, _goToTransfer, EliteColors.goldPrimary),
-_buildActionButton('إيداع', Icons.download, _goToDeposit, EliteColors.success),
-_buildActionButton('سحب', Icons.upload, _goToWithdraw, EliteColors.danger),
-_buildActionButton('كشف حساب', Icons.receipt_long, _goToStatement, EliteColors.goldPrimary),
+                      _buildActionButton('إيداع', Icons.download, _goToDeposit, EliteColors.success),
+                      _buildActionButton('سحب', Icons.upload, _goToWithdraw, EliteColors.danger),
+                      _buildActionButton('كشف حساب', Icons.receipt_long, _goToStatement, EliteColors.goldPrimary),
                     ],
                   ),
                   const SizedBox(height: 35),
@@ -209,19 +210,20 @@ _buildActionButton('كشف حساب', Icons.receipt_long, _goToStatement, EliteC
                               itemBuilder: (context, index) {
                                 final tx = _recentTransactions[index];
                                 final isCredit = tx['entry_type'] == 'CREDIT';
-return ListTile(
-  contentPadding: EdgeInsets.zero,
-  leading: CircleAvatar(
-    backgroundColor: isCredit ? EliteColors.success.withOpacity(0.2) : EliteColors.danger.withOpacity(0.2),
-    child: Icon(isCredit ? Icons.arrow_downward : Icons.arrow_upward, color: isCredit ? EliteColors.success : EliteColors.danger),
-  ),
-  title: Text(tx['tx_category'] ?? 'عملية مالية', style: const TextStyle(color: Colors.white)),
-  subtitle: Text(tx['created_at']?.toString().split(' ')[0] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-  trailing: Text(
-    '${isCredit ? '+' : '-'} ${tx['amount']}',
-    style: TextStyle(color: isCredit ? EliteColors.success : EliteColors.danger, fontWeight: FontWeight.bold, fontSize: 16),
-  ),
-);
+                                return ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: CircleAvatar(
+                                    backgroundColor: isCredit ? EliteColors.success.withOpacity(0.2) : EliteColors.danger.withOpacity(0.2),
+                                    child: Icon(isCredit ? Icons.arrow_downward : Icons.arrow_upward, color: isCredit ? EliteColors.success : EliteColors.danger),
+                                  ),
+                                  title: Text(tx['tx_category'] ?? 'عملية مالية', style: const TextStyle(color: Colors.white)),
+                                  subtitle: Text(tx['created_at']?.toString().split(' ')[0] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                  trailing: Text(
+                                    '${isCredit ? '+' : '-'} ${tx['amount']}',
+                                    style: TextStyle(color: isCredit ? EliteColors.success : EliteColors.danger, fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                );
+                              }, // ✅ القوس الذي تم إنقاذه هنا
                             ),
                 ],
               ),
@@ -240,11 +242,12 @@ return ListTile(
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-  color: color.withOpacity(0.15),
-  shape: BoxShape.circle,
-  border: Border.all(color: color.withOpacity(0.5)),
-  boxShadow: EliteShadows.neonGold, // استخدم neonDanger إذا اللون أحمر
-),
+              color: color.withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withOpacity(0.5)),
+              // ✅ تغيير الوهج ديناميكياً ليناسب لون الزر
+              boxShadow: color == EliteColors.danger ? EliteShadows.neonDanger : EliteShadows.neonGold, 
+            ),
             child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(height: 8),

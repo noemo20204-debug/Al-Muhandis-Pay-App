@@ -13,8 +13,9 @@ import 'withdrawal_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import '../core/elite_theme.dart';
-import '../core/elite_alerts.dart'; // 🟢 استدعاء محرك الإشعارات
+import '../core/elite_alerts.dart';
 
+// 🟢 استشعار حالة التطبيق (خلفية أم مفتوح)
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -22,7 +23,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Timer? _autoRefreshTimer;
   Timer? _inactivityTimer;
@@ -35,19 +36,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _recentTransactions = [];
   
   int _currentIndex = 0; 
-  int? _lastKnownTransactionId; // 🟢 رادار العمليات الجديدة
+  int? _lastKnownTransactionId;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // مراقبة حالة التطبيق
     _initDashboard();
-    // الرادار يعمل كل 10 ثوانٍ بصمت
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) => _initDashboard(isSilent: true));
     _resetInactivityTimer();
   }
 
+  // 🟢 يتنفذ عند خروج التطبيق للخلفية أو العودة منها
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _initDashboard(isSilent: true); // تحديث فوري عند فتح التطبيق من الخلفية
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _autoRefreshTimer?.cancel();
     _inactivityTimer?.cancel();
     super.dispose();
@@ -85,27 +95,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _avatarUrl = resData['user']['avatar'];
           }
           if (resData['wallet'] != null) {
-            _balance = double.tryParse(resData['wallet']['balance'].toString()) ?? 0.0;
+            double newBalance = double.tryParse(resData['wallet']['balance'].toString()) ?? 0.0;
             if (resData['wallet']['account_number'] != null) _walletId = resData['wallet']['account_number'];
+            
+            // 🟢 رادار الإيداع الذكي (يفحص الرصيد والحركات)
+            if (_balance != 0.0 && newBalance > _balance) {
+               double diff = newBalance - _balance;
+               EliteAlerts.show(context, title: 'إيداع وارد', message: 'تم إيداع ${diff.toStringAsFixed(2)} USDT في حسابك.', isSuccess: true);
+            }
+            _balance = newBalance;
           }
           if (resData['recent_transactions'] != null) {
             List<dynamic> newTxList = resData['recent_transactions'];
-            
-            // 🟢 تشغيل نظام التنبيه الذكي عند استلام حوالة جديدة
             if (newTxList.isNotEmpty) {
-              int currentTopId = newTxList[0]['entry_id'] ?? 0; // تأكد أن الباك اند يرسل entry_id
+              int currentTopId = newTxList[0]['transaction_id'] ?? newTxList[0]['entry_id'] ?? 0;
               if (_lastKnownTransactionId != null && currentTopId > _lastKnownTransactionId!) {
-                // إطلاق الإشعار فوراً!
-                EliteAlerts.show(context, title: 'إشعار مالي سيادي', message: 'تم اكتشاف حركة مالية جديدة في حسابك!', isSuccess: true);
+                 // الإشعار تم إطلاقه عبر مراقب الرصيد، نكتفي بتحديث الآي دي
               }
               _lastKnownTransactionId = currentTopId;
             }
-            
             _recentTransactions = newTxList;
           }
           _isLoading = false;
         });
       }
+    } on DioException catch (e) {
+      // 🟢 الحارس الشخصي الذي يمنع الشاشة المصفرة!
+      if (e.response?.statusCode == 401) {
+        _forceLogout(reason: 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً.');
+        return;
+      }
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }

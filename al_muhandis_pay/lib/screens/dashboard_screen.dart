@@ -10,7 +10,7 @@ import 'transfer_screen.dart';
 import 'statement_screen.dart';
 import 'deposit_screen.dart';
 import 'withdrawal_screen.dart';
-import 'glass_login_screen.dart';
+import 'login_screen.dart'; // 🟢 تم توجيه البوصلة للشاشة الأساسية الرسمية
 import 'profile_screen.dart';
 import '../core/elite_theme.dart';
 
@@ -66,8 +66,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (mounted) {
       if (reason != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(reason), backgroundColor: EliteColors.danger));
-      // التوجيه الحصري لشاشة الدخول الزجاجية الجديدة
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const GlassLoginScreen()), (route) => false);
+      // 🟢 التوجيه الحصري لشاشة الدخول الأساسية الرسمية
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
     }
   }
 
@@ -115,7 +115,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Scaffold(
         key: _scaffoldKey,
         extendBody: true, 
-        // 🟢 توحيد الخلفية مع شاشة الدخول (عمق ليلي مع إضاءة خافتة)
         body: Container(
           decoration: const BoxDecoration(
             gradient: RadialGradient(
@@ -127,7 +126,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: SafeArea(bottom: false, child: pages[_currentIndex]),
         ),
         
-        // 🟢 شريط تنقل سفلي احترافي (Floating Custom Nav Bar)
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.only(left: 20, right: 20, bottom: 25),
           child: Container(
@@ -156,7 +154,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // 🟢 تصميم أزرار الشريط السفلي
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
     return GestureDetector(

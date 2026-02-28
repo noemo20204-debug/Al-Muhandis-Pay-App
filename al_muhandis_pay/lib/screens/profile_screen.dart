@@ -1,14 +1,17 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:local_auth/local_auth.dart';
-import '../services/api_engine.dart';
-import '../core/elite_theme.dart';
-import 'glass_login_screen.dart'; // 🟢 التوجيه الحصري لشاشة الدخول الرسمية
+import 'package:url_launcher/url_launcher.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import '../services/api_engine.dart';
+import '../core/elite_theme.dart';
+import '../core/elite_alerts.dart'; 
+import 'login_screen.dart'; // 🟢 التوجيه للشاشة الأساسية الأصلية
+import 'security_devices_screen.dart'; 
 
 class ProfileScreen extends StatefulWidget {
   final String userName;
@@ -31,7 +34,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _currentAvatar = widget.avatarUrl;
   }
 
-  // 🟢 نظام رفع الصورة مع قراءة الخطأ التفصيلي
+  Future<void> _contactSupport() async {
+    final Uri url = Uri.parse('https://wa.me/970592283824?text=${Uri.encodeComponent("مرحباً قيادة المهندس، أواجه مشكلة تقنية في حسابي البنكي وأحتاج لتدخل الدعم الفني المباشر.")}');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) EliteAlerts.show(context, title: 'خطأ في النظام', message: 'لم نتمكن من فتح تطبيق الواتساب.', isSuccess: false);
+    }
+  }
+
   Future<void> _pickAndUploadImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
@@ -44,31 +53,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         "avatar": await MultipartFile.fromFile(image.path, filename: "avatar.jpg"),
       });
 
-      final response = await ApiEngine().dio.post('/user/avatar', data: formData);
+      final response = await ApiEngine().dio.post('user/avatar', data: formData);
       if (response.statusCode == 200) {
         setState(() => _currentAvatar = response.data['data']['avatar_url']);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديث الصورة الشخصية بنجاح'), backgroundColor: EliteColors.success));
+        EliteAlerts.show(context, title: 'عملية ناجحة', message: 'تم تحديث صورتك الشخصية في النظام المركزي.', isSuccess: true);
       }
     } on DioException catch (e) {
-      // 🟢 إظهار الخطأ الحقيقي القادم من السيرفر لمعرفة سبب الفشل
-      String errorMsg = e.response?.data['message'] ?? 'فشل الاتصال بالسيرفر';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ: $errorMsg'), backgroundColor: EliteColors.danger, duration: const Duration(seconds: 4)));
+      String errorMsg = e.response?.data['message'] ?? 'الخادم لا يستجيب للطلب.';
+      EliteAlerts.show(context, title: 'فشل الاتصال', message: errorMsg, isSuccess: false);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حدث خطأ غير متوقع أثناء الرفع'), backgroundColor: EliteColors.danger));
+      EliteAlerts.show(context, title: 'خطأ داخلي', message: 'حدث خطأ أثناء معالجة الصورة.', isSuccess: false);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
 
-  // 🟢 نظام تغيير كلمة المرور البنكي الرسمي
   Future<void> _startPasswordChangeFlow() async {
     final oldPassCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
-    final confirmPassCtrl = TextEditingController(); // 🟢 حقل التأكيد الجديد
+    final confirmPassCtrl = TextEditingController();
     final otpCtrl = TextEditingController();
     final g2faCtrl = TextEditingController();
 
-    // الخطوة 1: طلب البيانات
     bool? proceed = await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -89,13 +95,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: EliteColors.goldPrimary),
             onPressed: () {
-              // 🟢 التحقق من التطابق قبل الإرسال
               if (newPassCtrl.text != confirmPassCtrl.text) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمة المرور الجديدة غير متطابقة!'), backgroundColor: EliteColors.danger));
+                EliteAlerts.show(context, title: 'تنبيه أمني', message: 'كلمة المرور الجديدة غير متطابقة!', isSuccess: false);
                 return;
               }
               if (newPassCtrl.text.length < 8) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمة المرور يجب أن تكون 8 أحرف على الأقل'), backgroundColor: EliteColors.danger));
+                EliteAlerts.show(context, title: 'تنبيه أمني', message: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل.', isSuccess: false);
                 return;
               }
               Navigator.pop(ctx, true);
@@ -108,29 +113,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (proceed != true || oldPassCtrl.text.isEmpty || newPassCtrl.text.isEmpty) return;
 
-    // الخطوة 2: البصمة البيومترية
     final LocalAuthentication auth = LocalAuthentication();
     bool canAuthenticate = await auth.canCheckBiometrics || await auth.isDeviceSupported();
     if (canAuthenticate) {
       bool authenticated = await auth.authenticate(
-        localizedReason: 'يرجى تأكيد هويتك للمتابعة',
+        localizedReason: 'يرجى تأكيد هويتك الحيوية للمتابعة',
         options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
       );
       if (!authenticated) return;
     }
 
-    // الخطوة 3: الاتصال بالسيرفر
     try {
       showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)));
-      final resInit = await ApiEngine().dio.post('/user/password/init', data: {
+      final resInit = await ApiEngine().dio.post('user/password/init', data: {
         'old_password': oldPassCtrl.text,
         'new_password': newPassCtrl.text,
       });
-      Navigator.pop(context); // إغلاق التحميل
+      Navigator.pop(context);
 
       String tempTicket = resInit.data['data']['ticket'];
 
-      // الخطوة 4: الإدخال النهائي
       bool? finalProceed = await showDialog(
         context: context,
         barrierDismissible: false,
@@ -160,25 +162,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (finalProceed != true) return;
 
-      // الخطوة 5: تأكيد التغيير
       showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)));
-      await ApiEngine().dio.post('/user/password/confirm', data: {
+      await ApiEngine().dio.post('user/password/confirm', data: {
         'ticket': tempTicket,
         'email_otp': otpCtrl.text,
         'google_code': g2faCtrl.text,
       });
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول.'), backgroundColor: EliteColors.success));
+      EliteAlerts.show(context, title: 'أمان الحساب', message: 'تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول مجدداً.', isSuccess: true);
       
-      // 🟢 تدمير الجلسة وتوجيه المستخدم لشاشة الدخول الرسمية حصراً
+      // 🟢 التوجه للشاشة الأساسية الرسمية
       final prefs = await SharedPreferences.getInstance(); await prefs.clear();
       const storage = FlutterSecureStorage(); await storage.deleteAll();
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const GlassLoginScreen()), (r) => false);
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
 
     } on DioException catch (e) {
       Navigator.pop(context); 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.response?.data['message'] ?? 'فشل الإجراء، يرجى المحاولة لاحقاً'), backgroundColor: EliteColors.danger));
+      EliteAlerts.show(context, title: 'رفض العملية', message: e.response?.data['message'] ?? 'فشل الإجراء، يرجى المحاولة لاحقاً', isSuccess: false);
     }
   }
 
@@ -189,7 +190,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // رفع الصورة
           GestureDetector(
             onTap: _pickAndUploadImage,
             child: Stack(
@@ -219,17 +219,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(widget.walletId, style: const TextStyle(color: EliteColors.goldPrimary, fontSize: 14, letterSpacing: 2)),
           const SizedBox(height: 40),
 
-          // القوائم البنكية الرسمية
           _buildSettingsTile(Icons.lock_outline, 'تغيير كلمة المرور', 'حماية بيومترية ومصادقة ثنائية', onTap: _startPasswordChangeFlow),
-          _buildSettingsTile(Icons.security, 'إعدادات الأمان', 'إدارة الأجهزة المتصلة بالحساب'),
-          _buildSettingsTile(Icons.support_agent, 'التواصل مع الدعم الفني', 'المساعدة والمحادثة المباشرة'),
+          _buildSettingsTile(Icons.security, 'إعدادات الأمان', 'إدارة الأجهزة المتصلة بالحساب', onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityDevicesScreen()));
+          }),
+          _buildSettingsTile(Icons.support_agent, 'التواصل مع الدعم الفني', 'المساعدة والمحادثة المباشرة', onTap: _contactSupport),
           
           const SizedBox(height: 30),
           _buildSettingsTile(Icons.exit_to_app, 'تسجيل الخروج', 'إنهاء الجلسة الحالية', isDanger: true, onTap: () async {
             final prefs = await SharedPreferences.getInstance(); await prefs.clear();
             const storage = FlutterSecureStorage(); await storage.deleteAll();
-            // 🟢 توجيه صارم للـ GlassLoginScreen
-            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const GlassLoginScreen()), (r) => false);
+            // 🟢 التوجه للشاشة الأساسية الرسمية
+            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
           }),
         ],
       ),

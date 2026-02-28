@@ -13,7 +13,7 @@ import 'withdrawal_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import '../core/elite_theme.dart';
-import '../core/elite_alerts.dart'; //    
+import '../core/elite_alerts.dart'; // 🟢 استدعاء محرك الإشعارات
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,19 +29,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   bool _isLoading = true;
   double _balance = 0.0;
-  String _userName = ' ...';
+  String _userName = 'جاري التحميل...';
   String _walletId = 'AMP-PENDING';
   String? _avatarUrl;
   List<dynamic> _recentTransactions = [];
   
   int _currentIndex = 0; 
-  int? _lastKnownTransactionId; //    
+  int? _lastKnownTransactionId; // 🟢 رادار العمليات الجديدة
 
   @override
   void initState() {
     super.initState();
     _initDashboard();
-    //    10  
+    // الرادار يعمل كل 10 ثوانٍ بصمت
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) => _initDashboard(isSilent: true));
     _resetInactivityTimer();
   }
@@ -56,7 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
     _inactivityTimer = Timer(const Duration(minutes: 20), () {
-      _forceLogout(reason: '     ');
+      _forceLogout(reason: 'تم إنهاء الجلسة تلقائياً لعدم النشاط');
     });
   }
 
@@ -67,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try { const storage = FlutterSecureStorage(); await storage.deleteAll(); } catch (e) {}
 
     if (mounted) {
-      if (reason != null) EliteAlerts.show(context, title: ' ', message: reason, isSuccess: false);
+      if (reason != null) EliteAlerts.show(context, title: 'أمان النظام', message: reason, isSuccess: false);
       Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
     }
   }
@@ -81,7 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         
         setState(() {
           if (resData['user'] != null) {
-            _userName = resData['user']['name'] ?? ' ';
+            _userName = resData['user']['name'] ?? 'عميل المهندس';
             _avatarUrl = resData['user']['avatar'];
           }
           if (resData['wallet'] != null) {
@@ -91,12 +91,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (resData['recent_transactions'] != null) {
             List<dynamic> newTxList = resData['recent_transactions'];
             
-            //         
+            // 🟢 تشغيل نظام التنبيه الذكي عند استلام حوالة جديدة
             if (newTxList.isNotEmpty) {
-              int currentTopId = newTxList[0]['entry_id'] ?? 0; //      entry_id
+              int currentTopId = newTxList[0]['entry_id'] ?? 0; // تأكد أن الباك اند يرسل entry_id
               if (_lastKnownTransactionId != null && currentTopId > _lastKnownTransactionId!) {
-                //   !
-                EliteAlerts.show(context, title: '  ', message: '      !', isSuccess: true);
+                // إطلاق الإشعار فوراً!
+                EliteAlerts.show(context, title: 'إشعار مالي سيادي', message: 'تم اكتشاف حركة مالية جديدة في حسابك!', isSuccess: true);
               }
               _lastKnownTransactionId = currentTopId;
             }
@@ -119,8 +119,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       _buildMainDashboard(),
-      const Center(child: Text("  ", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
-      const Center(child: Text("  ", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
+      const Center(child: Text("شاشة الأخبار قريباً", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
+      const Center(child: Text("شاشة الخزنة قريباً", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
       ProfileScreen(userName: _userName, walletId: _walletId, avatarUrl: _avatarUrl),
     ];
 
@@ -153,10 +153,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildNavItem(0, Icons.bar_chart_rounded, ''),
-                _buildNavItem(1, Icons.newspaper, ''),
-                _buildNavItem(2, Icons.account_balance_wallet_outlined, ''),
-                _buildNavItem(3, Icons.person_outline, ''),
+                _buildNavItem(0, Icons.bar_chart_rounded, 'المنصة'),
+                _buildNavItem(1, Icons.newspaper, 'الأخبار'),
+                _buildNavItem(2, Icons.account_balance_wallet_outlined, 'الخزنة'),
+                _buildNavItem(3, Icons.person_outline, 'حسابي'),
               ],
             ),
           ),
@@ -208,7 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(' ', style: TextStyle(color: Colors.white54, fontSize: 16)),
+                    const Text('أهلاً بك،', style: TextStyle(color: Colors.white54, fontSize: 16)),
                     Text(_userName.split(' ').take(2).join(' '), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -246,12 +246,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(' ', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                            const Text('المحفظة الرئيسية', style: TextStyle(color: Colors.white70, fontSize: 14)),
                             Text(currentDate, style: const TextStyle(color: Colors.white54, fontSize: 12)),
                           ],
                         ),
                         const SizedBox(height: 15),
-                        const Text(' :', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        const Text('إجمالي الرصيد:', style: TextStyle(color: Colors.white, fontSize: 16)),
                         const SizedBox(height: 5),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -263,7 +263,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(color: EliteColors.success.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                              child: const Row(children: [Icon(Icons.arrow_upward, color: EliteColors.success, size: 14), SizedBox(width: 4), Text('', style: TextStyle(color: EliteColors.success, fontSize: 12, fontWeight: FontWeight.bold))]),
+                              child: const Row(children: [Icon(Icons.arrow_upward, color: EliteColors.success, size: 14), SizedBox(width: 4), Text('نشط', style: TextStyle(color: EliteColors.success, fontSize: 12, fontWeight: FontWeight.bold))]),
                             ),
                           ],
                         ),
@@ -278,10 +278,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildAppBtn('', Icons.download, () => _goToScreen(const DepositScreen())),
-                        _buildAppBtn('', Icons.swap_horiz, () => _goToScreen(const TransferScreen())),
-                        _buildAppBtn('', Icons.account_balance_wallet, () => _goToScreen(const WithdrawalScreen())),
-                        _buildAppBtn('', Icons.keyboard_arrow_down, () => _goToScreen(const StatementScreen())),
+                        _buildAppBtn('إيداع', Icons.download, () => _goToScreen(const DepositScreen())),
+                        _buildAppBtn('تحويل', Icons.swap_horiz, () => _goToScreen(const TransferScreen())),
+                        _buildAppBtn('سحب', Icons.account_balance_wallet, () => _goToScreen(const WithdrawalScreen())),
+                        _buildAppBtn('المزيد', Icons.keyboard_arrow_down, () => _goToScreen(const StatementScreen())),
                       ],
                     ),
                   ),
@@ -297,14 +297,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle), child: const Icon(Icons.security, color: Colors.white, size: 20)),
                   const SizedBox(width: 15),
-                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(' ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)), Text('     100%', style: TextStyle(color: Colors.white70, fontSize: 12))])),
+                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('حماية متقدمة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)), Text('اتصالك مشفر بالكامل وآمن بنسبة 100%', style: TextStyle(color: Colors.white70, fontSize: 12))])),
                 ],
               ),
             ),
             const SizedBox(height: 25),
 
             _recentTransactions.isEmpty
-                ? const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('  ', style: TextStyle(color: Colors.white54))))
+                ? const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد حركات', style: TextStyle(color: Colors.white54))))
                 : Column(
                     children: _recentTransactions.map((tx) {
                       final isCredit = tx['entry_type'] == 'CREDIT';
@@ -314,7 +314,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                           leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: isCredit ? EliteColors.success.withOpacity(0.1) : EliteColors.danger.withOpacity(0.1), shape: BoxShape.circle), child: Icon(isCredit ? Icons.arrow_downward : Icons.arrow_upward, color: isCredit ? EliteColors.success : EliteColors.danger, size: 18)),
-                          title: Text(tx['tx_category'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                          title: Text(tx['tx_category'] ?? 'عملية', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                           subtitle: Text(tx['created_at']?.toString().split(' ')[0] ?? '', style: const TextStyle(color: Colors.white54, fontSize: 12)),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,

@@ -11,7 +11,7 @@ import 'statement_screen.dart';
 import 'deposit_screen.dart';
 import 'withdrawal_screen.dart';
 import 'glass_login_screen.dart';
-import 'profile_screen.dart'; // 🟢 الشاشة الجديدة التي سنصنعها
+import 'profile_screen.dart';
 import '../core/elite_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -33,7 +33,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _avatarUrl;
   List<dynamic> _recentTransactions = [];
   
-  // 🟢 التحكم بالشريط السفلي
   int _currentIndex = 0; 
 
   @override
@@ -54,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
     _inactivityTimer = Timer(const Duration(minutes: 20), () {
-      _forceLogout(reason: 'انتهت الجلسة بسبب الخمول لحمايتك');
+      _forceLogout(reason: 'تم إنهاء الجلسة تلقائياً لعدم النشاط');
     });
   }
 
@@ -67,6 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (mounted) {
       if (reason != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(reason), backgroundColor: EliteColors.danger));
+      // التوجيه الحصري لشاشة الدخول الزجاجية الجديدة
       Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const GlassLoginScreen()), (route) => false);
     }
   }
@@ -101,12 +101,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 🟢 مصفوفة الشاشات للشريط السفلي
     final List<Widget> pages = [
       _buildMainDashboard(),
       const Center(child: Text("شاشة الأخبار قريباً", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
-      const Center(child: Text("شاشة الخزنة المتقدمة قريباً", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
-      ProfileScreen(userName: _userName, walletId: _walletId, avatarUrl: _avatarUrl), // شاشة الإعدادات الجديدة
+      const Center(child: Text("شاشة الخزنة قريباً", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
+      ProfileScreen(userName: _userName, walletId: _walletId, avatarUrl: _avatarUrl),
     ];
 
     return GestureDetector(
@@ -115,48 +114,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onTap: _resetInactivityTimer,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: EliteColors.nightBg,
-        extendBody: true, // للسماح للشريط العائم بالظهور فوق الخلفية
-        // 🟢 ثورة التصميم: رسم خلفية سينمائية وراء كل شيء
-        body: Stack(
-          children: [
-            Positioned.fill(child: CustomPaint(painter: EliteBackgroundPainter())),
-            SafeArea(bottom: false, child: pages[_currentIndex]),
-          ],
+        extendBody: true, 
+        // 🟢 توحيد الخلفية مع شاشة الدخول (عمق ليلي مع إضاءة خافتة)
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(-0.8, -0.6),
+              radius: 1.5,
+              colors: [Color(0xFF0F172A), Color(0xFF02040A)],
+            ),
+          ),
+          child: SafeArea(bottom: false, child: pages[_currentIndex]),
         ),
         
-        // 🟢 الشريط السفلي الزجاجي العائم الفخم
+        // 🟢 شريط تنقل سفلي احترافي (Floating Custom Nav Bar)
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.only(left: 20, right: 20, bottom: 25),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: EliteColors.surface.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: EliteColors.goldPrimary.withOpacity(0.3), width: 1),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 10))],
-                ),
-                child: BottomNavigationBar(
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  type: BottomNavigationBarType.fixed,
-                  selectedItemColor: EliteColors.goldPrimary,
-                  unselectedItemColor: Colors.white54,
-                  showSelectedLabels: true,
-                  showUnselectedLabels: false,
-                  currentIndex: _currentIndex,
-                  onTap: (index) => setState(() => _currentIndex = index),
-                  items: const [
-                    BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), activeIcon: Icon(Icons.bar_chart_rounded, size: 28), label: 'المنصة'),
-                    BottomNavigationBarItem(icon: Icon(Icons.newspaper), activeIcon: Icon(Icons.newspaper, size: 28), label: 'الأخبار'),
-                    BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), activeIcon: Icon(Icons.account_balance_wallet, size: 28), label: 'الخزنة'),
-                    BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person, size: 28), label: 'حسابي'),
-                  ],
-                ),
-              ),
+          child: Container(
+            height: 70,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A).withOpacity(0.95),
+              borderRadius: BorderRadius.circular(35),
+              border: Border.all(color: EliteColors.goldPrimary.withOpacity(0.2), width: 1),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 10)),
+                BoxShadow(color: EliteColors.goldPrimary.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2)),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildNavItem(0, Icons.bar_chart_rounded, 'المنصة'),
+                _buildNavItem(1, Icons.newspaper, 'الأخبار'),
+                _buildNavItem(2, Icons.account_balance_wallet_outlined, 'الخزنة'),
+                _buildNavItem(3, Icons.person_outline, 'حسابي'),
+              ],
             ),
           ),
         ),
@@ -164,7 +156,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // 🟢 محتوى الداشبورد الرئيسي (تم فصله ليعمل مع القائمة السفلية)
+  // 🟢 تصميم أزرار الشريط السفلي
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? EliteColors.goldPrimary.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: isSelected ? EliteColors.goldPrimary : Colors.white54, size: isSelected ? 26 : 24),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(color: isSelected ? EliteColors.goldPrimary : Colors.white54, fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMainDashboard() {
     final String currentDate = "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2,'0')}-${DateTime.now().day.toString().padLeft(2,'0')}";
     return RefreshIndicator(
@@ -173,7 +190,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onRefresh: () => _initDashboard(isSilent: false),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 15.0, bottom: 100.0), // مسافة سفلية للشريط العائم
+        padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 15.0, bottom: 120.0), 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -188,7 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
                 GestureDetector(
-                  onTap: () => setState(() => _currentIndex = 3), // ينقلك لصفحة "حسابي"
+                  onTap: () => setState(() => _currentIndex = 3),
                   child: Container(
                     decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: EliteColors.goldPrimary, width: 2)),
                     child: CircleAvatar(
@@ -203,7 +220,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 30),
 
-            // البطاقة البنكية
             Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF1E293B), Color(0xFF0F172A)]),
@@ -222,7 +238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('المحفظة السيادية', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                            const Text('المحفظة الرئيسية', style: TextStyle(color: Colors.white70, fontSize: 14)),
                             Text(currentDate, style: const TextStyle(color: Colors.white54, fontSize: 12)),
                           ],
                         ),
@@ -266,7 +282,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 25),
 
-            // لافتة الأمان
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               decoration: BoxDecoration(gradient: LinearGradient(colors: [EliteColors.goldPrimary.withOpacity(0.8), EliteColors.goldDark]), borderRadius: BorderRadius.circular(20), boxShadow: EliteShadows.neonGold),
@@ -274,13 +289,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle), child: const Icon(Icons.security, color: Colors.white, size: 20)),
                   const SizedBox(width: 15),
-                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('الخزنة المركزية محمية', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)), Text('اتصالك مشفر بالكامل وآمن بنسبة 100%', style: TextStyle(color: Colors.white70, fontSize: 12))])),
+                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('حماية متقدمة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)), Text('اتصالك مشفر بالكامل وآمن بنسبة 100%', style: TextStyle(color: Colors.white70, fontSize: 12))])),
                 ],
               ),
             ),
             const SizedBox(height: 25),
 
-            // النشاط الأخير
             _recentTransactions.isEmpty
                 ? const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد حركات', style: TextStyle(color: Colors.white54))))
                 : Column(

@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:local_auth/local_auth.dart';
 import '../services/api_engine.dart';
 import '../core/elite_theme.dart';
-import 'glass_login_screen.dart';
+import 'glass_login_screen.dart'; // 🟢 التوجيه الحصري لشاشة الدخول الرسمية
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -31,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _currentAvatar = widget.avatarUrl;
   }
 
-  // 1. نظام رفع الصورة
+  // 🟢 نظام رفع الصورة مع قراءة الخطأ التفصيلي
   Future<void> _pickAndUploadImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
@@ -47,41 +47,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final response = await ApiEngine().dio.post('/user/avatar', data: formData);
       if (response.statusCode == 200) {
         setState(() => _currentAvatar = response.data['data']['avatar_url']);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديث الهوية البصرية بنجاح'), backgroundColor: EliteColors.success));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديث الصورة الشخصية بنجاح'), backgroundColor: EliteColors.success));
       }
+    } on DioException catch (e) {
+      // 🟢 إظهار الخطأ الحقيقي القادم من السيرفر لمعرفة سبب الفشل
+      String errorMsg = e.response?.data['message'] ?? 'فشل الاتصال بالسيرفر';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ: $errorMsg'), backgroundColor: EliteColors.danger, duration: const Duration(seconds: 4)));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('فشل رفع الصورة'), backgroundColor: EliteColors.danger));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حدث خطأ غير متوقع أثناء الرفع'), backgroundColor: EliteColors.danger));
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
 
-  // 2. نظام تغيير كلمة المرور السيادي
+  // 🟢 نظام تغيير كلمة المرور البنكي الرسمي
   Future<void> _startPasswordChangeFlow() async {
     final oldPassCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController(); // 🟢 حقل التأكيد الجديد
     final otpCtrl = TextEditingController();
     final g2faCtrl = TextEditingController();
 
-    // الخطوة 1: طلب الباسورد القديم والجديد
+    // الخطوة 1: طلب البيانات
     bool? proceed = await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: EliteColors.surface,
-        title: const Text('تغيير الرمز السيادي', style: TextStyle(color: EliteColors.goldPrimary)),
+        title: const Text('تغيير كلمة المرور', style: TextStyle(color: EliteColors.goldPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: oldPassCtrl, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كلمة المرور الحالية')),
-            TextField(controller: newPassCtrl, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كلمة المرور الجديدة')),
+            TextField(controller: oldPassCtrl, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كلمة المرور الحالية', labelStyle: TextStyle(color: Colors.white54))),
+            const SizedBox(height: 10),
+            TextField(controller: newPassCtrl, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كلمة المرور الجديدة', labelStyle: TextStyle(color: Colors.white54))),
+            const SizedBox(height: 10),
+            TextField(controller: confirmPassCtrl, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'تأكيد كلمة المرور الجديدة', labelStyle: TextStyle(color: Colors.white54))),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء', style: TextStyle(color: Colors.white54))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: EliteColors.goldPrimary),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('متابعة للأمان', style: TextStyle(color: Colors.black)),
+            onPressed: () {
+              // 🟢 التحقق من التطابق قبل الإرسال
+              if (newPassCtrl.text != confirmPassCtrl.text) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمة المرور الجديدة غير متطابقة!'), backgroundColor: EliteColors.danger));
+                return;
+              }
+              if (newPassCtrl.text.length < 8) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمة المرور يجب أن تكون 8 أحرف على الأقل'), backgroundColor: EliteColors.danger));
+                return;
+              }
+              Navigator.pop(ctx, true);
+            },
+            child: const Text('متابعة', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -94,13 +113,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool canAuthenticate = await auth.canCheckBiometrics || await auth.isDeviceSupported();
     if (canAuthenticate) {
       bool authenticated = await auth.authenticate(
-        localizedReason: 'يرجى تأكيد هويتك السيادية لتغيير الرمز',
+        localizedReason: 'يرجى تأكيد هويتك للمتابعة',
         options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
       );
       if (!authenticated) return;
     }
 
-    // الخطوة 3: الاتصال بالسيرفر لطلب OTP
+    // الخطوة 3: الاتصال بالسيرفر
     try {
       showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)));
       final resInit = await ApiEngine().dio.post('/user/password/init', data: {
@@ -111,20 +130,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       String tempTicket = resInit.data['data']['ticket'];
 
-      // الخطوة 4: إدخال OTP + Google Auth
+      // الخطوة 4: الإدخال النهائي
       bool? finalProceed = await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           backgroundColor: EliteColors.surface,
-          title: const Text('المصادقة النهائية', style: TextStyle(color: EliteColors.goldPrimary)),
+          title: const Text('المصادقة الثنائية', style: TextStyle(color: EliteColors.goldPrimary)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('تم إرسال كود لبريدك الإلكتروني.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              const Text('تم إرسال كود التحقق لبريدك الإلكتروني.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 15),
+              TextField(controller: otpCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز البريد الإلكتروني (OTP)')),
               const SizedBox(height: 10),
-              TextField(controller: otpCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كود الإيميل (OTP)')),
-              TextField(controller: g2faCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كود Google Authenticator')),
+              TextField(controller: g2faCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز تطبيق Authenticator')),
             ],
           ),
           actions: [
@@ -132,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: EliteColors.danger),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('تغيير الرمز فوراً', style: TextStyle(color: Colors.white)),
+              child: const Text('تأكيد التغيير', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -147,29 +167,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'email_otp': otpCtrl.text,
         'google_code': g2faCtrl.text,
       });
-      Navigator.pop(context); // إغلاق التحميل
+      Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تغيير كلمة المرور! يرجى تسجيل الدخول.'), backgroundColor: EliteColors.success));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول.'), backgroundColor: EliteColors.success));
       
-      // طرد المستخدم لتسجيل الدخول بالباسورد الجديد
+      // 🟢 تدمير الجلسة وتوجيه المستخدم لشاشة الدخول الرسمية حصراً
       final prefs = await SharedPreferences.getInstance(); await prefs.clear();
       const storage = FlutterSecureStorage(); await storage.deleteAll();
       Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const GlassLoginScreen()), (r) => false);
 
     } on DioException catch (e) {
-      Navigator.pop(context); // إغلاق التحميل
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.response?.data['message'] ?? 'فشل الإجراء'), backgroundColor: EliteColors.danger));
+      Navigator.pop(context); 
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.response?.data['message'] ?? 'فشل الإجراء، يرجى المحاولة لاحقاً'), backgroundColor: EliteColors.danger));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0, bottom: 100.0),
+      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0, bottom: 120.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 🟢 الأفاتار التفاعلي
+          // رفع الصورة
           GestureDetector(
             onTap: _pickAndUploadImage,
             child: Stack(
@@ -199,15 +219,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(widget.walletId, style: const TextStyle(color: EliteColors.goldPrimary, fontSize: 14, letterSpacing: 2)),
           const SizedBox(height: 40),
 
-          // 🟢 القوائم
-          _buildSettingsTile(Icons.lock_outline, 'تغيير الرمز السيادي (Password)', 'حماية بيومترية + 2FA', onTap: _startPasswordChangeFlow),
-          _buildSettingsTile(Icons.security, 'إعدادات الأمان', 'إدارة الأجهزة المتصلة'),
-          _buildSettingsTile(Icons.support_agent, 'التواصل مع القيادة', 'الدعم الفني المباشر'),
+          // القوائم البنكية الرسمية
+          _buildSettingsTile(Icons.lock_outline, 'تغيير كلمة المرور', 'حماية بيومترية ومصادقة ثنائية', onTap: _startPasswordChangeFlow),
+          _buildSettingsTile(Icons.security, 'إعدادات الأمان', 'إدارة الأجهزة المتصلة بالحساب'),
+          _buildSettingsTile(Icons.support_agent, 'التواصل مع الدعم الفني', 'المساعدة والمحادثة المباشرة'),
           
           const SizedBox(height: 30),
-          _buildSettingsTile(Icons.exit_to_app, 'تسجيل الخروج', 'إنهاء الجلسة الآمنة', isDanger: true, onTap: () async {
+          _buildSettingsTile(Icons.exit_to_app, 'تسجيل الخروج', 'إنهاء الجلسة الحالية', isDanger: true, onTap: () async {
             final prefs = await SharedPreferences.getInstance(); await prefs.clear();
             const storage = FlutterSecureStorage(); await storage.deleteAll();
+            // 🟢 توجيه صارم للـ GlassLoginScreen
             Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const GlassLoginScreen()), (r) => false);
           }),
         ],

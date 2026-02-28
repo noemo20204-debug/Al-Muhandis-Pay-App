@@ -12,20 +12,20 @@ class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // تفعيل FLAG_SECURE فوراً لحجب سكرين شوت
+//         // تفعيل FLAG_SECURE فوراً لحجب سكرين شوت
         window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
+//             WindowManager.LayoutParams.FLAG_SECURE,
+//             WindowManager.LayoutParams.FLAG_SECURE
         )
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "enableScreenShield" -> {
-                    window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+//                     window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
                     result.success(true)
                 }
                 "disableScreenShield" -> {
-                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+//                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                     result.success(true)
                 }
                 else -> result.notImplemented()

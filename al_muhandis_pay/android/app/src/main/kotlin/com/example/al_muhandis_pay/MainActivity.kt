@@ -1,35 +1,22 @@
-package com.example.al_muhandis_pay
+package com.example.al_muhandis_pay // تأكد أن هذا السطر يطابق اسم الـ package الخاص بك، وإلا اتركه كما هو في ملفك الأصلي.
 
-import android.os.Bundle
-import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugins.GeneratedPluginRegistrant
+import android.os.Bundle
 
-class MainActivity : FlutterFragmentActivity() {
-    private val CHANNEL = "al_muhandis/screen_shield"
+class MainActivity: FlutterFragmentActivity() {
+        override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                    GeneratedPluginRegistrant.registerWith(flutterEngine)
+        }
 
-    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        super.configureFlutterEngine(flutterEngine)
-
-//         // تفعيل FLAG_SECURE فوراً لحجب سكرين شوت
-        window.setFlags(
-//             WindowManager.LayoutParams.FLAG_SECURE,
-//             WindowManager.LayoutParams.FLAG_SECURE
-        )
-
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "enableScreenShield" -> {
-//                     window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-                    result.success(true)
-                }
-                "disableScreenShield" -> {
-//                     window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                    result.success(true)
-                }
-                else -> result.notImplemented()
+            override fun onCreate(savedInstanceState: Bundle?) {
+                        super.onCreate(savedInstanceState)
+                                
+                                        // 🟢 تم إيقاف حماية التقاط الشاشة مؤقتاً لأغراض التطوير
+                                                // window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
+            }
+}
             }
         }
-    }
 }

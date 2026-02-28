@@ -24,6 +24,7 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   google_fonts: ^8.0.2
   url_launcher: ^6.3.2
+  flutter_local_notifications: ^17.1.2
 
 dev_dependencies:
   flutter_test:
@@ -32,13 +33,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
-  # 📦 تسجيل أصول المهندس السيادية
   assets:
     - assets/
     - assets/fonts/
-
-  # 👑 تسجيل خط Cairo للعمل Offline
   fonts:
     - family: Cairo
       fonts:

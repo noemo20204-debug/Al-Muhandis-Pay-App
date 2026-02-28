@@ -7,6 +7,7 @@ import 'transfer_screen.dart';
 import 'statement_screen.dart';
 import 'deposit_screen.dart';
 import 'withdrawal_screen.dart';
+import '../core/elite_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -37,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) {
       setState(() {
         _userName = name;
+        // سيتم عرض هذا مؤقتاً حتى يأتي رقم الحساب البنكي من السيرفر
         _walletId = rawId.startsWith('AG-') ? rawId : 'AG-${rawId.padLeft(6, '0')}';
       });
     }
@@ -49,6 +51,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           if (resData['wallet'] != null) {
             _balance = double.tryParse(resData['wallet']['balance'].toString()) ?? 0.0;
+            // 🟢 التعديل هنا: قراءة رقم الحساب البنكي (AMP) من السيرفر وعرضه
+            if (resData['wallet']['account_number'] != null && resData['wallet']['account_number'].toString().startsWith('AMP')) {
+              _walletId = resData['wallet']['account_number'];
+            }
           }
           if (resData['recent_transactions'] != null) {
             _recentTransactions = resData['recent_transactions'];
@@ -62,8 +68,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // التعامل مع حالة عدم وجود محفظة بعد (عميل جديد)
           if (e.response?.statusCode == 404) {
             _balance = 0.0;
-          } else {
-            // خطأ آخر
           }
           _isLoading = false;
         });
@@ -82,7 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF00101D),
+      backgroundColor: EliteColors.nightBg,
       body: SafeArea(
         child: RefreshIndicator(
           color: const Color(0xFFd4af37),
@@ -123,56 +127,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // --- البطاقة الزجاجية (الخزنة) ---
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(25),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white.withOpacity(0.1),
-                              Colors.white.withOpacity(0.05),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('الرصيد الإجمالي', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                            const SizedBox(height: 10),
-                            _isLoading 
-                              ? const CircularProgressIndicator(color: Color(0xFFd4af37))
-                              : Text('USDT ${_balance.toStringAsFixed(2)}', style: const TextStyle(color: Color(0xFFd4af37), fontSize: 32, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 25),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(_walletId, style: const TextStyle(color: Colors.white54, fontSize: 14, letterSpacing: 2)),
-                                const Icon(Icons.credit_card, color: Colors.white54),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+ClipRRect(
+  borderRadius: BorderRadius.circular(24),
+  child: BackdropFilter(
+    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+    child: Container(
+      padding: const EdgeInsets.all(26),
+      decoration: BoxDecoration(
+        gradient: EliteColors.glassGradient,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: EliteColors.glassBorderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'الرصيد الإجمالي',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _isLoading
+              ? const CircularProgressIndicator(color: EliteColors.goldPrimary)
+              : Text(
+                  'USDT ${_balance.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: EliteColors.goldPrimary,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
                   ),
+                ),
+          const SizedBox(height: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _walletId,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  letterSpacing: 2,
+                  fontSize: 13,
+                ),
+              ),
+              const Icon(Icons.security, color: Colors.white54),
+            ],
+          ),
+        ],
+      ),
+    ),
+  ),
+),
                   const SizedBox(height: 30),
 
                   // --- الأزرار الأربعة السيادية ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildActionButton('تحويل', Icons.send, _goToTransfer, Colors.blue),
-                      _buildActionButton('إيداع', Icons.download, _goToDeposit, Colors.green),
-                      _buildActionButton('سحب', Icons.upload, _goToWithdraw, Colors.orange),
-                      _buildActionButton('كشف حساب', Icons.receipt_long, _goToStatement, Colors.purple),
+                      _buildActionButton('تحويل', Icons.send, _goToTransfer, EliteColors.goldPrimary),
+_buildActionButton('إيداع', Icons.download, _goToDeposit, EliteColors.success),
+_buildActionButton('سحب', Icons.upload, _goToWithdraw, EliteColors.danger),
+_buildActionButton('كشف حساب', Icons.receipt_long, _goToStatement, EliteColors.goldPrimary),
                     ],
                   ),
                   const SizedBox(height: 35),
@@ -191,17 +209,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               itemBuilder: (context, index) {
                                 final tx = _recentTransactions[index];
                                 final isCredit = tx['entry_type'] == 'CREDIT';
-                                return ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: CircleAvatar(
-                                    backgroundColor: isCredit ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-                                    child: Icon(isCredit ? Icons.arrow_downward : Icons.arrow_upward, color: isCredit ? Colors.green : Colors.red),
-                                  ),
-                                  title: Text(tx['tx_category'] ?? 'عملية مالية', style: const TextStyle(color: Colors.white)),
-                                  subtitle: Text(tx['created_at']?.toString().split(' ')[0] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                                  trailing: Text('${isCredit ? '+' : '-'} ${tx['amount']}', style: TextStyle(color: isCredit ? Colors.green : Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-                                );
-                              },
+return ListTile(
+  contentPadding: EdgeInsets.zero,
+  leading: CircleAvatar(
+    backgroundColor: isCredit ? EliteColors.success.withOpacity(0.2) : EliteColors.danger.withOpacity(0.2),
+    child: Icon(isCredit ? Icons.arrow_downward : Icons.arrow_upward, color: isCredit ? EliteColors.success : EliteColors.danger),
+  ),
+  title: Text(tx['tx_category'] ?? 'عملية مالية', style: const TextStyle(color: Colors.white)),
+  subtitle: Text(tx['created_at']?.toString().split(' ')[0] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+  trailing: Text(
+    '${isCredit ? '+' : '-'} ${tx['amount']}',
+    style: TextStyle(color: isCredit ? EliteColors.success : EliteColors.danger, fontWeight: FontWeight.bold, fontSize: 16),
+  ),
+);
                             ),
                 ],
               ),
@@ -220,10 +240,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(0.5)),
-            ),
+  color: color.withOpacity(0.15),
+  shape: BoxShape.circle,
+  border: Border.all(color: color.withOpacity(0.5)),
+  boxShadow: EliteShadows.neonGold, // استخدم neonDanger إذا اللون أحمر
+),
             child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(height: 8),

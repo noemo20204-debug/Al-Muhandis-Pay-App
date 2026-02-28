@@ -24,6 +24,10 @@ class EliteColors {
   static const Color glassGlow = Color(0x1AFFFFFF); // شفافية 10%
   static const Color glassBorderLight = Color(0x4DFFFFFF); // حافة مضيئة
   static const Color glassBorderDark = Color(0x1AFFFFFF); // حافة داكنة
+  
+  // 🟢 الإصلاح الجراحي: إضافة الألوان التي يطلبها ملف glass_login_screen
+  static const Color glassSurface = Color(0x0AFFFFFF); 
+  static const Color glassBorder = Color(0x33FFFFFF);
 
   // تدرجات جاهزة (Premium Gradients)
   static const LinearGradient goldGradient = LinearGradient(
@@ -44,36 +48,30 @@ class EliteColors {
 // 💡 2. هندسة الظلال والوهج (Neon & Shadows)
 // ==========================================
 class EliteShadows {
-  // وهج ذهبي خلف الأزرار والبطاقات المهمة
   static List<BoxShadow> get neonGold => [
     BoxShadow(color: EliteColors.goldPrimary.withOpacity(0.3), blurRadius: 20, spreadRadius: -5, offset: const Offset(0, 8)),
     BoxShadow(color: EliteColors.goldLight.withOpacity(0.1), blurRadius: 40, spreadRadius: 5, offset: const Offset(0, 0)),
   ];
 
-  // وهج أحمر لعمليات السحب أو الحظر
   static List<BoxShadow> get neonDanger => [
     BoxShadow(color: EliteColors.danger.withOpacity(0.4), blurRadius: 25, spreadRadius: -5, offset: const Offset(0, 8)),
   ];
 
-  // ظلال ناعمة للواجهات العميقة
   static List<BoxShadow> get deepSoft => [
     BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 15)),
   ];
 }
 
 // ==========================================
-// 🔮 3. محرك رسم الخلفية السينمائية (Cinematic Background)
+// 🔮 3. محرك رسم الخلفية السينمائية
 // ==========================================
 class EliteBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Rect rect = Offset.zero & size;
-    
-    // 1. صبغ الخلفية باللون الكحلي العميق جداً
     final Paint bgPaint = Paint()..color = EliteColors.nightBg;
     canvas.drawRect(rect, bgPaint);
 
-    // 2. رسم شبكة سيبرانية دقيقة جداً (Cyber-Grid)
     final Paint gridPaint = Paint()
       ..color = Colors.white.withOpacity(0.02)
       ..strokeWidth = 1.0
@@ -87,21 +85,20 @@ class EliteBackgroundPainter extends CustomPainter {
       canvas.drawLine(Offset(0, i), Offset(size.width, i), gridPaint);
     }
 
-    // 3. رسم مصادر إضاءة نيون (Glowing Orbs) موزعة هندسياً
     final Paint orb1 = Paint()..color = EliteColors.goldPrimary.withOpacity(0.12)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 120);
-    final Paint orb2 = Paint()..color = const Color(0xFF1E3A8A).withOpacity(0.2)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 150); // إضاءة زرقاء خافتة
+    final Paint orb2 = Paint()..color = const Color(0xFF1E3A8A).withOpacity(0.2)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 150);
     final Paint orb3 = Paint()..color = EliteColors.goldLight.withOpacity(0.08)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 100);
 
-    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.1), 180, orb1); // أعلى اليمين
-    canvas.drawCircle(Offset(size.width * 0.1, size.height * 0.8), 220, orb2); // أسفل اليسار
-    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.5), 150, orb3); // منتصف الشاشة
+    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.1), 180, orb1);
+    canvas.drawCircle(Offset(size.width * 0.1, size.height * 0.8), 220, orb2);
+    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.5), 150, orb3);
   }
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ==========================================
-// 📱 4. تطبيق الهوية على مستوى النظام (Global Theme)
+// 📱 4. تطبيق الهوية على مستوى النظام
 // ==========================================
 class EliteTheme {
   static ThemeData get getTheme {
@@ -113,13 +110,12 @@ class EliteTheme {
         secondary: EliteColors.surface,
         error: EliteColors.danger,
       ),
-      // تخصيص خط Cairo ليكون حاداً وواضحاً كشاشات التداول
       textTheme: GoogleFonts.cairoTextTheme().apply(
         bodyColor: Colors.white, 
         displayColor: Colors.white,
       ).copyWith(
-        displayLarge: GoogleFonts.cairo(fontWeight: FontWeight.w800, letterSpacing: 1.5), // للعناوين الضخمة
-        labelLarge: GoogleFonts.cairo(fontWeight: FontWeight.w700, letterSpacing: 1.2), // للأزرار
+        displayLarge: GoogleFonts.cairo(fontWeight: FontWeight.w800, letterSpacing: 1.5),
+        labelLarge: GoogleFonts.cairo(fontWeight: FontWeight.w700, letterSpacing: 1.2),
       ),
     );
   }

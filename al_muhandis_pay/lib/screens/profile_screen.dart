@@ -10,7 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/api_engine.dart';
 import '../core/elite_theme.dart';
 import '../core/elite_alerts.dart'; 
-import 'login_screen.dart'; // 🟢 التوجيه للشاشة الأساسية الأصلية
+import 'login_screen.dart'; 
 import 'security_devices_screen.dart'; 
 
 class ProfileScreen extends StatefulWidget {
@@ -41,6 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // 🟢 الإصلاح الجذري لرفع الصورة (Headers & Paths)
   Future<void> _pickAndUploadImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
@@ -53,21 +54,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
         "avatar": await MultipartFile.fromFile(image.path, filename: "avatar.jpg"),
       });
 
-      final response = await ApiEngine().dio.post('user/avatar', data: formData);
+      // 🟢 إضافة شرطة المسار والتأكيد على نوع البيانات
+      final response = await ApiEngine().dio.post('/user/avatar', 
+        data: formData,
+        options: Options(headers: {"Content-Type": "multipart/form-data"}),
+      );
+      
       if (response.statusCode == 200) {
         setState(() => _currentAvatar = response.data['data']['avatar_url']);
         EliteAlerts.show(context, title: 'عملية ناجحة', message: 'تم تحديث صورتك الشخصية في النظام المركزي.', isSuccess: true);
       }
     } on DioException catch (e) {
-      String errorMsg = e.response?.data['message'] ?? 'الخادم لا يستجيب للطلب.';
+      String errorMsg = "الخادم لا يستجيب للطلب أو المسار غير موجود.";
+      if (e.response != null && e.response?.data is Map) {
+        errorMsg = e.response?.data['message'] ?? errorMsg;
+      }
       EliteAlerts.show(context, title: 'فشل الاتصال', message: errorMsg, isSuccess: false);
     } catch (e) {
-      EliteAlerts.show(context, title: 'خطأ داخلي', message: 'حدث خطأ أثناء معالجة الصورة.', isSuccess: false);
+      EliteAlerts.show(context, title: 'خطأ داخلي', message: 'حدث خطأ أثناء معالجة الصورة في هاتفك.', isSuccess: false);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
 
+  // 🟢 الإصلاح الجذري لتغيير كلمة المرور
   Future<void> _startPasswordChangeFlow() async {
     final oldPassCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
@@ -116,54 +126,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final LocalAuthentication auth = LocalAuthentication();
     bool canAuthenticate = await auth.canCheckBiometrics || await auth.isDeviceSupported();
     if (canAuthenticate) {
-      bool authenticated = await auth.authenticate(
-        localizedReason: 'يرجى تأكيد هويتك الحيوية للمتابعة',
-        options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
-      );
-      if (!authenticated) return;
+      try {
+        bool authenticated = await auth.authenticate(
+          localizedReason: 'يرجى تأكيد هويتك الحيوية للمتابعة',
+          options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
+        );
+        if (!authenticated) return;
+      } catch (e) {
+        // تجاهل الخطأ إذا تم إلغاء البصمة يدوياً
+        return;
+      }
     }
 
+    // 🟢 الاتصال بالسيرفر مع تصحيح المسار ومعالجة الانهيار
+    String tempTicket = '';
     try {
       showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)));
-      final resInit = await ApiEngine().dio.post('user/password/init', data: {
+      
+      final resInit = await ApiEngine().dio.post('/user/password/init', data: {
         'old_password': oldPassCtrl.text,
         'new_password': newPassCtrl.text,
       });
+      Navigator.pop(context); // إغلاق دائرة التحميل
+
+      if (resInit.data['data'] != null && resInit.data['data']['ticket'] != null) {
+        tempTicket = resInit.data['data']['ticket'];
+      } else {
+        throw Exception("لم يرسل السيرفر تذكرة المصادقة");
+      }
+
+    } on DioException catch (e) {
+      Navigator.pop(context); 
+      String errorMsg = "الخادم لا يستجيب";
+      if (e.response != null && e.response?.data is Map) {
+        errorMsg = e.response?.data['message'] ?? errorMsg;
+      }
+      EliteAlerts.show(context, title: 'فشل التحقق', message: errorMsg, isSuccess: false);
+      return; // إيقاف العملية هنا
+    } catch (e) {
       Navigator.pop(context);
+      EliteAlerts.show(context, title: 'خطأ غير متوقع', message: 'حدث خطأ في النظام.', isSuccess: false);
+      return;
+    }
 
-      String tempTicket = resInit.data['data']['ticket'];
-
-      bool? finalProceed = await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: EliteColors.surface,
-          title: const Text('المصادقة الثنائية', style: TextStyle(color: EliteColors.goldPrimary)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('تم إرسال كود التحقق لبريدك الإلكتروني.', style: TextStyle(color: Colors.white70, fontSize: 13)),
-              const SizedBox(height: 15),
-              TextField(controller: otpCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز البريد الإلكتروني (OTP)')),
-              const SizedBox(height: 10),
-              TextField(controller: g2faCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز تطبيق Authenticator')),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: EliteColors.danger),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('تأكيد التغيير', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
+    // الخطوة الأخيرة (المصادقة الثنائية)
+    bool? finalProceed = await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: EliteColors.surface,
+        title: const Text('المصادقة الثنائية', style: TextStyle(color: EliteColors.goldPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('تم إرسال كود التحقق لبريدك الإلكتروني.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const SizedBox(height: 15),
+            TextField(controller: otpCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز البريد الإلكتروني (OTP)')),
+            const SizedBox(height: 10),
+            TextField(controller: g2faCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز تطبيق Authenticator')),
           ],
         ),
-      );
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: EliteColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('تأكيد التغيير', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
 
-      if (finalProceed != true) return;
+    if (finalProceed != true) return;
 
+    try {
       showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)));
-      await ApiEngine().dio.post('user/password/confirm', data: {
+      await ApiEngine().dio.post('/user/password/confirm', data: {
         'ticket': tempTicket,
         'email_otp': otpCtrl.text,
         'google_code': g2faCtrl.text,
@@ -172,14 +210,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       EliteAlerts.show(context, title: 'أمان الحساب', message: 'تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول مجدداً.', isSuccess: true);
       
-      // 🟢 التوجه للشاشة الأساسية الرسمية
       final prefs = await SharedPreferences.getInstance(); await prefs.clear();
       const storage = FlutterSecureStorage(); await storage.deleteAll();
       Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
 
     } on DioException catch (e) {
       Navigator.pop(context); 
-      EliteAlerts.show(context, title: 'رفض العملية', message: e.response?.data['message'] ?? 'فشل الإجراء، يرجى المحاولة لاحقاً', isSuccess: false);
+      String errorMsg = "الخادم لا يستجيب";
+      if (e.response != null && e.response?.data is Map) {
+        errorMsg = e.response?.data['message'] ?? errorMsg;
+      }
+      EliteAlerts.show(context, title: 'رفض العملية', message: errorMsg, isSuccess: false);
     }
   }
 
@@ -229,7 +270,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildSettingsTile(Icons.exit_to_app, 'تسجيل الخروج', 'إنهاء الجلسة الحالية', isDanger: true, onTap: () async {
             final prefs = await SharedPreferences.getInstance(); await prefs.clear();
             const storage = FlutterSecureStorage(); await storage.deleteAll();
-            // 🟢 التوجه للشاشة الأساسية الرسمية
             Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
           }),
         ],

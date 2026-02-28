@@ -1,42 +1,39 @@
 import 'package:flutter/material.dart';
-import 'screens/splash_gate.dart';
-import 'services/api_engine.dart';
+import 'package:flutter/services.dart';
+import 'core/elite_theme.dart';
+import 'screens/splash_screen.dart'; // 🟢 الشاشة الجديدة
 
 void main() {
-  // 🔑 إنشاء المفتاح المركزي للتحكم في مسارات التطبيق
-  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  WidgetsFlutterBinding.ensureInitialized();
   
-  // 🔌 ربط المفتاح بمحرك الـ ApiEngine السيادي
-  ApiEngine().setNavigatorKey(navigatorKey);
+  // تثبيت اتجاه الشاشة عمودياً
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   
-  runApp(AlMuhandisPay(navKey: navigatorKey));
+  // تلوين شريط المهام العلوي ليتناسب مع الثيم
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+  ));
+
+  runApp(const AlMuhandisApp());
 }
 
-class AlMuhandisPay extends StatelessWidget {
-  final GlobalKey<NavigatorState> navKey;
-  const AlMuhandisPay({super.key, required this.navKey});
+class AlMuhandisApp extends StatelessWidget {
+  const AlMuhandisApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Al-Muhandis Pay',
       debugShowCheckedModeBanner: false,
-      // 🛡️ تفعيل الربط لكي تعمل شاشة التحديث الإجباري من أي مكان
-      navigatorKey: navKey,
-      theme: ThemeData(
-        fontFamily: 'Cairo',
-        primaryColor: const Color(0xFF00101D),
-        scaffoldBackgroundColor: const Color(0xFF00101D),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: const Color(0xFFd4af37),
-          primary: const Color(0xFFd4af37),
-        ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
-          bodyMedium: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
-        ),
-      ),
-      home: const SplashGate(),
+      theme: EliteTheme.getTheme,
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl, // 🟢 فرض اللغة العربية من اليمين لليسار
+          child: child!,
+        );
+      },
+      home: const SplashScreen(), // 🟢 الإقلاع من الشاشة الفخمة الجديدة
     );
   }
 }

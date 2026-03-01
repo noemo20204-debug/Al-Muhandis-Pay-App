@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert'; // 🟢 مكتبة التشفير (السلاح السري لتخطي حظر السيرفر)
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
@@ -41,43 +43,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // 🟢 الإصلاح الجذري لرفع الصورة (Headers & Paths)
+  // 🟢 الحل القطعي والنهائي لرفع الصورة (تشفير Base64 لتخطي كل جدران الحماية)
   Future<void> _pickAndUploadImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    // جودة 40% لضمان خفة حجم النص المشفر وسرعة الإرسال الخارقة
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 40);
     
     if (image == null) return;
 
     setState(() => _isUploading = true);
     try {
-      FormData formData = FormData.fromMap({
-        "avatar": await MultipartFile.fromFile(image.path, filename: "avatar.jpg"),
-      });
+      // 1. قراءة الصورة كـ "بايتات"
+      final bytes = await image.readAsBytes();
+      // 2. تشفير البايتات إلى نص Base64
+      final String base64Image = base64Encode(bytes);
+      final String extension = image.path.split('.').last;
 
-      // 🟢 إضافة شرطة المسار والتأكيد على نوع البيانات
-      final response = await ApiEngine().dio.post('/user/avatar', 
-        data: formData,
-        options: Options(headers: {"Content-Type": "multipart/form-data"}),
+      // 3. الإرسال كبيانات نصية عادية (JSON) وليس كملف!
+      final response = await ApiEngine().dio.post(
+        '/user/avatar',
+        data: {
+          'avatar_base64': base64Image,
+          'extension': extension,
+        },
       );
       
       if (response.statusCode == 200) {
         setState(() => _currentAvatar = response.data['data']['avatar_url']);
-        EliteAlerts.show(context, title: 'عملية ناجحة', message: 'تم تحديث صورتك الشخصية في النظام المركزي.', isSuccess: true);
+        EliteAlerts.show(context, title: 'عملية ناجحة', message: 'تم تحديث الهوية البصرية في النظام المركزي.', isSuccess: true);
       }
     } on DioException catch (e) {
-      String errorMsg = "الخادم لا يستجيب للطلب أو المسار غير موجود.";
+      String errorMsg = "الخادم لا يستجيب أو المسار غير موجود.";
       if (e.response != null && e.response?.data is Map) {
         errorMsg = e.response?.data['message'] ?? errorMsg;
       }
       EliteAlerts.show(context, title: 'فشل الاتصال', message: errorMsg, isSuccess: false);
     } catch (e) {
-      EliteAlerts.show(context, title: 'خطأ داخلي', message: 'حدث خطأ أثناء معالجة الصورة في هاتفك.', isSuccess: false);
+      EliteAlerts.show(context, title: 'خطأ داخلي', message: 'حدث خطأ أثناء معالجة تشفير الصورة.', isSuccess: false);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
 
-  // 🟢 الإصلاح الجذري لتغيير كلمة المرور
   Future<void> _startPasswordChangeFlow() async {
     final oldPassCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
@@ -89,7 +96,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: EliteColors.surface,
-        title: const Text('تغيير كلمة المرور', style: TextStyle(color: EliteColors.goldPrimary)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: EliteColors.goldPrimary.withOpacity(0.3))),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_reset, color: EliteColors.goldPrimary),
+            SizedBox(width: 10),
+            Text('تغيير كلمة المرور', style: TextStyle(color: EliteColors.goldPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -103,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء', style: TextStyle(color: Colors.white54))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: EliteColors.goldPrimary),
+            style: ElevatedButton.styleFrom(backgroundColor: EliteColors.goldPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             onPressed: () {
               if (newPassCtrl.text != confirmPassCtrl.text) {
                 EliteAlerts.show(context, title: 'تنبيه أمني', message: 'كلمة المرور الجديدة غير متطابقة!', isSuccess: false);
@@ -133,12 +147,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
         if (!authenticated) return;
       } catch (e) {
-        // تجاهل الخطأ إذا تم إلغاء البصمة يدوياً
         return;
       }
     }
 
-    // 🟢 الاتصال بالسيرفر مع تصحيح المسار ومعالجة الانهيار
     String tempTicket = '';
     try {
       showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)));
@@ -147,7 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'old_password': oldPassCtrl.text,
         'new_password': newPassCtrl.text,
       });
-      Navigator.pop(context); // إغلاق دائرة التحميل
+      Navigator.pop(context); 
 
       if (resInit.data['data'] != null && resInit.data['data']['ticket'] != null) {
         tempTicket = resInit.data['data']['ticket'];
@@ -162,28 +174,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         errorMsg = e.response?.data['message'] ?? errorMsg;
       }
       EliteAlerts.show(context, title: 'فشل التحقق', message: errorMsg, isSuccess: false);
-      return; // إيقاف العملية هنا
+      return; 
     } catch (e) {
       Navigator.pop(context);
       EliteAlerts.show(context, title: 'خطأ غير متوقع', message: 'حدث خطأ في النظام.', isSuccess: false);
       return;
     }
 
-    // الخطوة الأخيرة (المصادقة الثنائية)
     bool? finalProceed = await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: EliteColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: EliteColors.goldPrimary.withOpacity(0.3))),
         title: const Text('المصادقة الثنائية', style: TextStyle(color: EliteColors.goldPrimary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('تم إرسال كود التحقق لبريدك الإلكتروني.', style: TextStyle(color: Colors.white70, fontSize: 13)),
             const SizedBox(height: 15),
-            TextField(controller: otpCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز البريد الإلكتروني (OTP)')),
+            TextField(controller: otpCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز البريد الإلكتروني (OTP)', prefixIcon: Icon(Icons.email, color: Colors.white38))),
             const SizedBox(height: 10),
-            TextField(controller: g2faCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز تطبيق Authenticator')),
+            TextField(controller: g2faCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز تطبيق Authenticator', prefixIcon: Icon(Icons.security, color: Colors.white38))),
           ],
         ),
         actions: [
@@ -231,35 +243,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          GestureDetector(
-            onTap: _pickAndUploadImage,
-            child: Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: EliteColors.goldPrimary, width: 2), boxShadow: EliteShadows.neonGold),
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: EliteColors.surface,
-                    backgroundImage: _currentAvatar != null ? NetworkImage(_currentAvatar!) : null,
-                    child: _currentAvatar == null ? const Icon(Icons.person, color: EliteColors.goldPrimary, size: 50) : null,
+          // 🟢 بطاقة الهوية الرقمية الفخمة (ترقية الـ UX)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [EliteColors.surface.withOpacity(0.8), const Color(0xFF070B19).withOpacity(0.9)],
                   ),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: EliteColors.goldPrimary.withOpacity(0.3), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: EliteColors.goldPrimary.withOpacity(0.05), blurRadius: 30, offset: const Offset(0, 10)),
+                  ],
                 ),
-                if (_isUploading) const Positioned.fill(child: CircularProgressIndicator(color: EliteColors.goldPrimary)),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(color: EliteColors.goldPrimary, shape: BoxShape.circle),
-                  child: const Icon(Icons.camera_alt, color: Colors.black, size: 20),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: _pickAndUploadImage,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: EliteColors.goldPrimary, width: 2), boxShadow: EliteShadows.neonGold),
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: EliteColors.nightBg,
+                              backgroundImage: _currentAvatar != null ? NetworkImage(_currentAvatar!) : null,
+                              child: _currentAvatar == null ? const Icon(Icons.person, color: EliteColors.goldPrimary, size: 50) : null,
+                            ),
+                          ),
+                          if (_isUploading) const Positioned.fill(child: CircularProgressIndicator(color: EliteColors.goldPrimary)),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(color: EliteColors.goldPrimary, shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt, color: Colors.black, size: 20),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(widget.userName, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      child: Text(widget.walletId, style: const TextStyle(color: EliteColors.goldPrimary, fontSize: 13, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-          Text(widget.userName, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-          Text(widget.walletId, style: const TextStyle(color: EliteColors.goldPrimary, fontSize: 14, letterSpacing: 2)),
+          
           const SizedBox(height: 40),
 
+          // 🟢 أزرار التحكم
           _buildSettingsTile(Icons.lock_outline, 'تغيير كلمة المرور', 'حماية بيومترية ومصادقة ثنائية', onTap: _startPasswordChangeFlow),
           _buildSettingsTile(Icons.security, 'إعدادات الأمان', 'إدارة الأجهزة المتصلة بالحساب', onTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityDevicesScreen()));
@@ -267,7 +317,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildSettingsTile(Icons.support_agent, 'التواصل مع الدعم الفني', 'المساعدة والمحادثة المباشرة', onTap: _contactSupport),
           
           const SizedBox(height: 30),
-          _buildSettingsTile(Icons.exit_to_app, 'تسجيل الخروج', 'إنهاء الجلسة الحالية', isDanger: true, onTap: () async {
+          _buildSettingsTile(Icons.exit_to_app, 'تسجيل الخروج', 'إنهاء الجلسة الحالية بشكل آمن', isDanger: true, onTap: () async {
             final prefs = await SharedPreferences.getInstance(); await prefs.clear();
             const storage = FlutterSecureStorage(); await storage.deleteAll();
             Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
@@ -280,13 +330,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSettingsTile(IconData icon, String title, String subtitle, {bool isDanger = false, VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
-      decoration: BoxDecoration(color: EliteColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(0.05))),
+      decoration: BoxDecoration(color: EliteColors.surface.withOpacity(0.6), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.05))),
       child: ListTile(
         onTap: onTap,
-        leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: isDanger ? EliteColors.danger.withOpacity(0.1) : EliteColors.goldPrimary.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: isDanger ? EliteColors.danger : EliteColors.goldPrimary)),
-        title: Text(title, style: TextStyle(color: isDanger ? EliteColors.danger : Colors.white, fontWeight: FontWeight.bold)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: isDanger ? EliteColors.danger.withOpacity(0.1) : EliteColors.goldPrimary.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: isDanger ? EliteColors.danger : EliteColors.goldPrimary)),
+        title: Text(title, style: TextStyle(color: isDanger ? EliteColors.danger : Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
         subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
+        trailing: Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
+          child: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 14),
+        ),
       ),
     );
   }

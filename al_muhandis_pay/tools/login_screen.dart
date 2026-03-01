@@ -183,13 +183,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     ));
   }
 
-void _handleApiError(dynamic e) {
-    String msg = '  ';
-    if (e is DioException && e.response != null) {
-      //         !
-      msg = ': ${e.response?.statusCode} | : ${e.response?.data}';
-    } else {
-      msg = ' : $e';
+  void _handleApiError(dynamic e) {
+    String msg = 'خطأ في الاتصال بالسيرفر.';
+    if (e is DioException && e.response?.data != null) {
+      final data = e.response!.data;
+      if (data is Map) msg = data['message']?.toString() ?? data['msg']?.toString() ?? msg;
     }
     _showError(msg);
   }

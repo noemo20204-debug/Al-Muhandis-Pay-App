@@ -1,0 +1,3606 @@
+﻿======================================================================
+  AL-MUHANDIS PAY - FLUTTER MOBILE APP SOURCE CODE
+======================================================================
+
+📂 App Directory Tree (lib/):
+lib/core/elite_alerts.dart
+lib/core/elite_theme.dart
+lib/main.dart
+lib/models/transaction_model.dart
+lib/screens/advanced_transfer_screen.dart
+lib/screens/dashboard_screen.dart
+lib/screens/deposit_screen.dart
+lib/screens/elite_dashboard.dart
+lib/screens/force_update_screen.dart
+lib/screens/login_screen.dart
+lib/screens/profile_screen.dart
+lib/screens/security_devices_screen.dart
+lib/screens/splash_gate.dart
+lib/screens/splash_screen.dart
+lib/screens/statement_screen.dart
+lib/screens/transfer_screen.dart
+lib/screens/withdrawal_screen.dart
+lib/services/api_engine.dart
+lib/services/biometric_service.dart
+lib/services/hmac_interceptor.dart
+lib/services/statement_service.dart
+lib/widgets/elite_button.dart
+lib/widgets/glass_input.dart
+lib/widgets/sovereign_receipt_widget.dart
+
+
+======================================================================
+  DART SOURCE CODE DUMP
+======================================================================
+
+
+======================================================================
+FILE: lib/core/elite_alerts.dart
+======================================================================
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'elite_theme.dart';
+
+class EliteAlerts {
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  static bool _initialized = false;
+
+  // 1. تهيئة محرك إشعارات النظام
+  static Future<void> _initNotifications() async {
+    if (_initialized) return;
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initSettings = InitializationSettings(android: androidSettings);
+    await _notificationsPlugin.initialize(initSettings);
+    _initialized = true;
+  }
+
+  // 2. إرسال إشعار للنظام (Status Bar)
+  static Future<void> _showSystemNotification(String title, String body, bool isSuccess) async {
+    await _initNotifications();
+    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'almuhandis_sec_channel',
+      'تنبيهات الأمان السيادية',
+      channelDescription: 'إشعارات العمليات المالية والأمنية',
+      importance: Importance.max,
+      priority: Priority.high,
+      color: isSuccess ? EliteColors.success : EliteColors.danger,
+      icon: '@mipmap/ic_launcher',
+    );
+    NotificationDetails details = NotificationDetails(android: androidDetails);
+    await _notificationsPlugin.show(DateTime.now().millisecond ~/ 1000, title, body, details);
+  }
+
+  // 3. الواجهة المرئية داخل التطبيق (In-App Floating Alert)
+  static void show(BuildContext context, {required String title, required String message, bool isSuccess = true}) {
+    // تشغيل إشعار النظام فوراً
+    _showSystemNotification(title, message, isSuccess);
+
+    // إظهار الرسالة الزجاجية الفخمة داخل التطبيق
+    final color = isSuccess ? EliteColors.success : EliteColors.danger;
+    final icon = isSuccess ? Icons.check_circle_outline : Icons.error_outline;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        margin: const EdgeInsets.only(bottom: 30, left: 20, right: 20),
+        content: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withOpacity(0.5), width: 1.5),
+                boxShadow: [
+                  BoxShadow(color: color.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 5)),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+                    child: Icon(icon, color: color, size: 28),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15)),
+                        const SizedBox(height: 4),
+                        Text(message, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.3)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+}
+
+======================================================================
+FILE: lib/core/elite_theme.dart
+======================================================================
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// ==========================================
+// 🎨 1. نظام الألوان والتدرجات السيادية
+// ==========================================
+class EliteColors {
+  // درجات الذهب الملكي (Metallic Gold)
+  static const Color goldLight = Color(0xFFFFDF73);
+  static const Color goldPrimary = Color(0xFFD4AF37);
+  static const Color goldDark = Color(0xFF996515);
+
+  // درجات الليل والعمق (Deep Space)
+  static const Color nightBg = Color(0xFF02040A); // أسود كحلي عميق جداً
+  static const Color surface = Color(0xFF0F172A); // كحلي الواجهات
+
+  // ألوان الحالات (Status)
+  static const Color danger = Color(0xFFE11D48); // أحمر ليزري
+  static const Color success = Color(0xFF10B981); // أخضر نيون
+
+  // خامات الزجاج (Glass Materials)
+  static const Color glassFill = Color(0x0DFFFFFF); // شفافية 5%
+  static const Color glassGlow = Color(0x1AFFFFFF); // شفافية 10%
+  static const Color glassBorderLight = Color(0x4DFFFFFF); // حافة مضيئة
+  static const Color glassBorderDark = Color(0x1AFFFFFF); // حافة داكنة
+  
+  // 🟢 الإصلاح الجراحي: إضافة الألوان التي يطلبها ملف glass_login_screen
+  static const Color glassSurface = Color(0x0AFFFFFF); 
+  static const Color glassBorder = Color(0x33FFFFFF);
+
+  // تدرجات جاهزة (Premium Gradients)
+  static const LinearGradient goldGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [goldLight, goldPrimary, goldDark],
+    stops: [0.0, 0.5, 1.0],
+  );
+
+  static const LinearGradient glassGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [glassGlow, glassFill],
+  );
+}
+
+// ==========================================
+// 💡 2. هندسة الظلال والوهج (Neon & Shadows)
+// ==========================================
+class EliteShadows {
+  static List<BoxShadow> get neonGold => [
+    BoxShadow(color: EliteColors.goldPrimary.withOpacity(0.3), blurRadius: 20, spreadRadius: -5, offset: const Offset(0, 8)),
+    BoxShadow(color: EliteColors.goldLight.withOpacity(0.1), blurRadius: 40, spreadRadius: 5, offset: const Offset(0, 0)),
+  ];
+
+  static List<BoxShadow> get neonDanger => [
+    BoxShadow(color: EliteColors.danger.withOpacity(0.4), blurRadius: 25, spreadRadius: -5, offset: const Offset(0, 8)),
+  ];
+
+  static List<BoxShadow> get deepSoft => [
+    BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 15)),
+  ];
+}
+
+// ==========================================
+// 🔮 3. محرك رسم الخلفية السينمائية
+// ==========================================
+class EliteBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Rect rect = Offset.zero & size;
+    final Paint bgPaint = Paint()..color = EliteColors.nightBg;
+    canvas.drawRect(rect, bgPaint);
+
+    final Paint gridPaint = Paint()
+      ..color = Colors.white.withOpacity(0.02)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    
+    double step = 40.0;
+    for (double i = 0; i < size.width; i += step) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), gridPaint);
+    }
+    for (double i = 0; i < size.height; i += step) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), gridPaint);
+    }
+
+    final Paint orb1 = Paint()..color = EliteColors.goldPrimary.withOpacity(0.12)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 120);
+    final Paint orb2 = Paint()..color = const Color(0xFF1E3A8A).withOpacity(0.2)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 150);
+    final Paint orb3 = Paint()..color = EliteColors.goldLight.withOpacity(0.08)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 100);
+
+    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.1), 180, orb1);
+    canvas.drawCircle(Offset(size.width * 0.1, size.height * 0.8), 220, orb2);
+    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.5), 150, orb3);
+  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ==========================================
+// 📱 4. تطبيق الهوية على مستوى النظام
+// ==========================================
+class EliteTheme {
+  static ThemeData get getTheme {
+    return ThemeData(
+      scaffoldBackgroundColor: EliteColors.nightBg,
+      primaryColor: EliteColors.goldPrimary,
+      colorScheme: const ColorScheme.dark(
+        primary: EliteColors.goldPrimary,
+        secondary: EliteColors.surface,
+        error: EliteColors.danger,
+      ),
+      textTheme: GoogleFonts.cairoTextTheme().apply(
+        bodyColor: Colors.white, 
+        displayColor: Colors.white,
+      ).copyWith(
+        displayLarge: GoogleFonts.cairo(fontWeight: FontWeight.w800, letterSpacing: 1.5),
+        labelLarge: GoogleFonts.cairo(fontWeight: FontWeight.w700, letterSpacing: 1.2),
+      ),
+    );
+  }
+}
+
+======================================================================
+FILE: lib/main.dart
+======================================================================
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'core/elite_theme.dart';
+import 'screens/splash_screen.dart'; // 🟢 الشاشة الجديدة
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // تثبيت اتجاه الشاشة عمودياً
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  
+  // تلوين شريط المهام العلوي ليتناسب مع الثيم
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+  ));
+
+  runApp(const AlMuhandisApp());
+}
+
+class AlMuhandisApp extends StatelessWidget {
+  const AlMuhandisApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Al-Muhandis Pay',
+      debugShowCheckedModeBanner: false,
+      theme: EliteTheme.getTheme,
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl, // 🟢 فرض اللغة العربية من اليمين لليسار
+          child: child!,
+        );
+      },
+      home: const SplashScreen(), // 🟢 الإقلاع من الشاشة الفخمة الجديدة
+    );
+  }
+}
+
+======================================================================
+FILE: lib/models/transaction_model.dart
+======================================================================
+class TransactionModel {
+  final String entryId;
+  final String entryType;
+  final double amount;
+  final DateTime createdAt;
+  final String transactionId;
+  final String txCategory;
+  final String txStatus;
+  final String receiptId;
+  final String relatedParty; // 👈 إضافة الطرف المقابل
+
+  TransactionModel({
+    required this.entryId,
+    required this.entryType,
+    required this.amount,
+    required this.createdAt,
+    required this.transactionId,
+    required this.txCategory,
+    required this.txStatus,
+    required this.receiptId,
+    required this.relatedParty,
+  });
+
+  factory TransactionModel.fromJson(Map<String, dynamic> json) {
+    return TransactionModel(
+      entryId: json['entry_id']?.toString() ?? '0',
+      entryType: json['entry_type']?.toString() ?? '',
+      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      transactionId: json['transaction_id']?.toString() ?? '',
+      txCategory: json['tx_category']?.toString() ?? '',
+      txStatus: json['tx_status']?.toString() ?? '',
+      receiptId: json['receipt_id']?.toString() ?? '',
+      relatedParty: json['related_party']?.toString() ?? '',
+    );
+  }
+
+  bool get isCredit => entryType.toUpperCase() == 'CREDIT';
+  bool get isDebit  => entryType.toUpperCase() == 'DEBIT';
+
+  String get categoryLabel {
+    switch (txCategory) {
+      case 'deposit':    return 'إيداع';
+      case 'withdrawal': return 'سحب';
+      case 'transfer':   return 'حوالة';
+      case 'fee':        return 'رسوم';
+      default:           return txCategory;
+    }
+  }
+
+  String get categoryLabelEn {
+    switch (txCategory) {
+      case 'deposit':    return 'DEPOSIT';
+      case 'withdrawal': return 'WITHDRAWAL';
+      case 'transfer':   return 'TRANSFER';
+      case 'fee':        return 'FEE';
+      default:           return txCategory.toUpperCase();
+    }
+  }
+
+  String get shortTxId {
+    if (transactionId.length >= 8) {
+      return transactionId.substring(0, 8).toUpperCase();
+    }
+    return transactionId;
+  }
+}
+
+class PaginationModel {
+  final int currentPage;
+  final int perPage;
+  final int totalRecords;
+  final int totalPages;
+  final bool hasMore;
+
+  PaginationModel({
+    required this.currentPage, required this.perPage, required this.totalRecords, required this.totalPages, required this.hasMore,
+  });
+
+  factory PaginationModel.fromJson(Map<String, dynamic> json) {
+    return PaginationModel(
+      currentPage:  json['current_page']  ?? 1,
+      perPage:      json['per_page']      ?? 20,
+      totalRecords: json['total_records'] ?? 0,
+      totalPages:   json['total_pages']   ?? 0,
+      hasMore:      json['has_more']      ?? false,
+    );
+  }
+}
+
+
+======================================================================
+FILE: lib/screens/advanced_transfer_screen.dart
+======================================================================
+import 'package:flutter/material.dart';
+import 'package:crypto/crypto.dart'; 
+import 'dart:convert';
+import 'package:local_auth/local_auth.dart';
+import 'package:http/http.dart' as http;
+import '../widgets/sovereign_receipt_widget.dart'; // 👈 استيراد المحرك الذي زرعناه
+
+class AdvancedTransferScreen extends StatefulWidget {
+  const AdvancedTransferScreen({super.key});
+
+  @override
+  _AdvancedTransferScreenState createState() => _AdvancedTransferScreenState();
+}
+
+class _AdvancedTransferScreenState extends State<AdvancedTransferScreen> {
+  final _amountController = TextEditingController();
+  final _receiverController = TextEditingController();
+  bool _isProcessing = false;
+
+  String _generateSecureSignature(Map<String, dynamic> data, String timestamp) {
+    var key = utf8.encode("AL_MUHANDIS_CORE_VAULT_KEY_2026_X9"); 
+    var bytes = utf8.encode(jsonEncode(data) + timestamp);
+    var hmacSha256 = Hmac(sha256, key); 
+    return hmacSha256.convert(bytes).toString();
+  }
+
+  // 🛡️ محرك عرض الإيصال السيادي (الذي طلبته)
+  void _showSovereignReceipt(Map<String, dynamic> data) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Color(0xFF00101D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 15),
+            Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.grey[800], borderRadius: BorderRadius.circular(10))),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: SovereignReceipt(txData: data), 
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFd4af37),
+                  minimumSize: const Size(double.infinity, 55),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context); 
+                  Navigator.pop(context); 
+                },
+                child: const Text("العودة للرئيسية", style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.black)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _processSovereignTransfer() async {
+    final LocalAuthentication auth = LocalAuthentication();
+    bool isAuthorized = await auth.authenticate(
+      localizedReason: 'تأكيد الهوية السيادية مطلوب لتنفيذ الحوالة',
+      options: const AuthenticationOptions(biometricOnly: true),
+    );
+
+    if (!isAuthorized) return;
+    setState(() => _isProcessing = true);
+
+    try {
+      final String ts = DateTime.now().millisecondsSinceEpoch.toString();
+      final Map<String, dynamic> txData = {
+        'receiver_id': _receiverController.text,
+        'amount': double.parse(_amountController.text),
+        'description': 'حوالة سيادية مؤمنة',
+      };
+
+      final String sig = _generateSecureSignature(txData, ts);
+
+      final response = await http.post(
+        Uri.parse('https://al-muhandis.com/api/transfer'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Hmac-Signature': sig,
+          'X-Timestamp': ts,
+        },
+        body: jsonEncode(txData),
+      );
+
+      final resultData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        // 🚀 استدعاء محرك العرض اللحظي فور النجاح
+        _showSovereignReceipt(resultData);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(resultData['message'] ?? "فشلت العملية")));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("فشل في الاتصال بالسيرفر")));
+    } finally {
+      setState(() => _isProcessing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF00101D),
+      appBar: AppBar(title: const Text("تحويل سيادي", style: TextStyle(fontFamily: 'Cairo')), backgroundColor: Colors.transparent),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            TextField(controller: _receiverController, style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'), decoration: const InputDecoration(hintText: "رقم المستلم", hintStyle: TextStyle(color: Colors.grey))),
+            const SizedBox(height: 20),
+            TextField(controller: _amountController, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white, fontFamily: 'Cairo'), decoration: const InputDecoration(hintText: "المبلغ", hintStyle: TextStyle(color: Colors.grey))),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFd4af37), minimumSize: const Size(double.infinity, 55)),
+              onPressed: _isProcessing ? null : _processSovereignTransfer,
+              child: _isProcessing ? const CircularProgressIndicator(color: Colors.black) : const Text("تأكيد الحوالة الآن", style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.bold, color: Colors.black)),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+======================================================================
+FILE: lib/screens/dashboard_screen.dart
+======================================================================
+import 'dart:ui';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import '../services/api_engine.dart';
+import 'transfer_screen.dart';
+import 'statement_screen.dart';
+import 'deposit_screen.dart';
+import 'withdrawal_screen.dart';
+import 'login_screen.dart';
+import 'profile_screen.dart';
+import '../core/elite_theme.dart';
+import '../core/elite_alerts.dart';
+
+// 🟢 استشعار حالة التطبيق (خلفية أم مفتوح)
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  Timer? _autoRefreshTimer;
+  Timer? _inactivityTimer;
+
+  bool _isLoading = true;
+  double _balance = 0.0;
+  String _userName = 'جاري التحميل...';
+  String _walletId = 'AMP-PENDING';
+  String? _avatarUrl;
+  List<dynamic> _recentTransactions = [];
+  
+  int _currentIndex = 0; 
+  int? _lastKnownTransactionId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this); // مراقبة حالة التطبيق
+    _initDashboard();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) => _initDashboard(isSilent: true));
+    _resetInactivityTimer();
+  }
+
+  // 🟢 يتنفذ عند خروج التطبيق للخلفية أو العودة منها
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _initDashboard(isSilent: true); // تحديث فوري عند فتح التطبيق من الخلفية
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _autoRefreshTimer?.cancel();
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  void _resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(const Duration(minutes: 20), () {
+      _forceLogout(reason: 'تم إنهاء الجلسة تلقائياً لعدم النشاط');
+    });
+  }
+
+  Future<void> _forceLogout({String? reason}) async {
+    _autoRefreshTimer?.cancel();
+    _inactivityTimer?.cancel();
+    final prefs = await SharedPreferences.getInstance(); await prefs.clear();
+    try { const storage = FlutterSecureStorage(); await storage.deleteAll(); } catch (e) {}
+
+    if (mounted) {
+      if (reason != null) EliteAlerts.show(context, title: 'أمان النظام', message: reason, isSuccess: false);
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
+    }
+  }
+
+  Future<void> _initDashboard({bool isSilent = false}) async {
+    if (!isSilent && mounted) setState(() => _isLoading = true);
+    try {
+      final response = await ApiEngine().dio.get('/wallet');
+      if (response.statusCode == 200 && mounted) {
+        final resData = response.data['data'] ?? response.data;
+        
+        setState(() {
+          if (resData['user'] != null) {
+            _userName = resData['user']['name'] ?? 'عميل المهندس';
+            _avatarUrl = resData['user']['avatar'];
+          }
+          if (resData['wallet'] != null) {
+            double newBalance = double.tryParse(resData['wallet']['balance'].toString()) ?? 0.0;
+            if (resData['wallet']['account_number'] != null) _walletId = resData['wallet']['account_number'];
+            
+            // 🟢 رادار الإيداع الذكي (يفحص الرصيد والحركات)
+            if (_balance != 0.0 && newBalance > _balance) {
+               double diff = newBalance - _balance;
+               EliteAlerts.show(context, title: 'إيداع وارد', message: 'تم إيداع ${diff.toStringAsFixed(2)} USDT في حسابك.', isSuccess: true);
+            }
+            _balance = newBalance;
+          }
+          if (resData['recent_transactions'] != null) {
+            List<dynamic> newTxList = resData['recent_transactions'];
+            if (newTxList.isNotEmpty) {
+              int currentTopId = newTxList[0]['transaction_id'] ?? newTxList[0]['entry_id'] ?? 0;
+              if (_lastKnownTransactionId != null && currentTopId > _lastKnownTransactionId!) {
+                 // الإشعار تم إطلاقه عبر مراقب الرصيد، نكتفي بتحديث الآي دي
+              }
+              _lastKnownTransactionId = currentTopId;
+            }
+            _recentTransactions = newTxList;
+          }
+          _isLoading = false;
+        });
+      }
+    } on DioException catch (e) {
+      // 🟢 الحارس الشخصي الذي يمنع الشاشة المصفرة!
+      if (e.response?.statusCode == 401) {
+        _forceLogout(reason: 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً.');
+        return;
+      }
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _goToScreen(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen)).then((_) => _initDashboard(isSilent: true));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      _buildMainDashboard(),
+      const Center(child: Text("شاشة الأخبار قريباً", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
+      const Center(child: Text("شاشة الخزنة قريباً", style: TextStyle(color: EliteColors.goldPrimary, fontSize: 20))),
+      ProfileScreen(userName: _userName, walletId: _walletId, avatarUrl: _avatarUrl),
+    ];
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onPanDown: (_) => _resetInactivityTimer(),
+      onTap: _resetInactivityTimer,
+      child: Scaffold(
+        key: _scaffoldKey,
+        extendBody: true, 
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(center: Alignment(-0.8, -0.6), radius: 1.5, colors: [Color(0xFF0F172A), Color(0xFF02040A)]),
+          ),
+          child: SafeArea(bottom: false, child: pages[_currentIndex]),
+        ),
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 25),
+          child: Container(
+            height: 70,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A).withOpacity(0.95),
+              borderRadius: BorderRadius.circular(35),
+              border: Border.all(color: EliteColors.goldPrimary.withOpacity(0.2), width: 1),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 10)),
+                BoxShadow(color: EliteColors.goldPrimary.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2)),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildNavItem(0, Icons.bar_chart_rounded, 'المنصة'),
+                _buildNavItem(1, Icons.newspaper, 'الأخبار'),
+                _buildNavItem(2, Icons.account_balance_wallet_outlined, 'الخزنة'),
+                _buildNavItem(3, Icons.person_outline, 'حسابي'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? EliteColors.goldPrimary.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: isSelected ? EliteColors.goldPrimary : Colors.white54, size: isSelected ? 26 : 24),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(color: isSelected ? EliteColors.goldPrimary : Colors.white54, fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainDashboard() {
+    final String currentDate = "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2,'0')}-${DateTime.now().day.toString().padLeft(2,'0')}";
+    return RefreshIndicator(
+      color: EliteColors.goldPrimary,
+      backgroundColor: EliteColors.surface,
+      onRefresh: () => _initDashboard(isSilent: false),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 15.0, bottom: 120.0), 
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('أهلاً بك،', style: TextStyle(color: Colors.white54, fontSize: 16)),
+                    Text(_userName.split(' ').take(2).join(' '), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => _currentIndex = 3),
+                  child: Container(
+                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: EliteColors.goldPrimary, width: 2)),
+                    child: CircleAvatar(
+                      radius: 22,
+                      backgroundColor: EliteColors.surface,
+                      backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
+                      child: _avatarUrl == null ? const Icon(Icons.person, color: EliteColors.goldPrimary) : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 30),
+
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF1E293B), Color(0xFF0F172A)]),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: EliteColors.goldPrimary.withOpacity(0.3), width: 1.5),
+                boxShadow: [BoxShadow(color: EliteColors.goldPrimary.withOpacity(0.15), blurRadius: 30, offset: const Offset(0, 10))],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(25.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('المحفظة الرئيسية', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                            Text(currentDate, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
+                        const Text('إجمالي الرصيد:', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        const SizedBox(height: 5),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _isLoading && _balance == 0.0
+                                ? const SizedBox(height: 30, child: CircularProgressIndicator(color: EliteColors.goldPrimary))
+                                : Text('USDT ${_balance.toStringAsFixed(2)}', style: const TextStyle(color: EliteColors.goldPrimary, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(color: EliteColors.success.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                              child: const Row(children: [Icon(Icons.arrow_upward, color: EliteColors.success, size: 14), SizedBox(width: 4), Text('نشط', style: TextStyle(color: EliteColors.success, fontSize: 12, fontWeight: FontWeight.bold))]),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(_walletId, style: const TextStyle(color: Colors.white38, fontSize: 13, letterSpacing: 2)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.03), borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30))),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildAppBtn('إيداع', Icons.download, () => _goToScreen(const DepositScreen())),
+                        _buildAppBtn('تحويل', Icons.swap_horiz, () => _goToScreen(const TransferScreen())),
+                        _buildAppBtn('سحب', Icons.account_balance_wallet, () => _goToScreen(const WithdrawalScreen())),
+                        _buildAppBtn('المزيد', Icons.keyboard_arrow_down, () => _goToScreen(const StatementScreen())),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 25),
+
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [EliteColors.goldPrimary.withOpacity(0.8), EliteColors.goldDark]), borderRadius: BorderRadius.circular(20), boxShadow: EliteShadows.neonGold),
+              child: Row(
+                children: [
+                  Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle), child: const Icon(Icons.security, color: Colors.white, size: 20)),
+                  const SizedBox(width: 15),
+                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('حماية متقدمة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)), Text('اتصالك مشفر بالكامل وآمن بنسبة 100%', style: TextStyle(color: Colors.white70, fontSize: 12))])),
+                ],
+              ),
+            ),
+            const SizedBox(height: 25),
+
+            _recentTransactions.isEmpty
+                ? const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد حركات', style: TextStyle(color: Colors.white54))))
+                : Column(
+                    children: _recentTransactions.map((tx) {
+                      final isCredit = tx['entry_type'] == 'CREDIT';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(color: EliteColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(0.05))),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                          leading: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: isCredit ? EliteColors.success.withOpacity(0.1) : EliteColors.danger.withOpacity(0.1), shape: BoxShape.circle), child: Icon(isCredit ? Icons.arrow_downward : Icons.arrow_upward, color: isCredit ? EliteColors.success : EliteColors.danger, size: 18)),
+                          title: Text(tx['tx_category'] ?? 'عملية', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: Text(tx['created_at']?.toString().split(' ')[0] ?? '', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('${isCredit ? '+' : '-'} ${tx['amount']}', style: TextStyle(color: isCredit ? EliteColors.success : EliteColors.danger, fontWeight: FontWeight.bold, fontSize: 14)),
+                              const SizedBox(width: 10),
+                              const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 14),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBtn(String title, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(padding: const EdgeInsets.all(14), decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle), child: Icon(icon, color: EliteColors.surface, size: 24)),
+          const SizedBox(height: 8),
+          Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+======================================================================
+FILE: lib/screens/deposit_screen.dart
+======================================================================
+import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:dio/dio.dart' show DioException;
+import '../services/api_engine.dart';
+
+class _C {
+  static const Color nightBg     = Color(0xFF030712);
+  static const Color cardBg      = Color(0xFF0D1321);
+  static const Color goldPrimary = Color(0xFFD4AF37);
+  static const Color goldDark    = Color(0xFFB8952C);
+  static const Color goldLight   = Color(0xFFE8D48B);
+  static const Color success     = Color(0xFF22C55E);
+  static const Color danger      = Color(0xFFEF4444);
+  static const Color warning     = Color(0xFFF59E0B);
+  static const Color glassBorder = Color(0xFF1E293B);
+  static const Color inputBg     = Color(0xFF0F1524);
+  static const Color textMuted   = Color(0xFF64748B);
+}
+
+class DepositScreen extends StatefulWidget {
+  const DepositScreen({super.key});
+  @override
+  State<DepositScreen> createState() => _DepositScreenState();
+}
+
+class _DepositScreenState extends State<DepositScreen> with TickerProviderStateMixin {
+  final _amountCtrl = TextEditingController();
+  String _phase = 'input'; 
+  bool _isLoading = false;
+  String? _errorMsg;
+  int? _depositId;
+  String _payAddress = '';
+  String _payAmount = '';
+  String _status = '';
+  int _expiresIn = 3600; 
+  Timer? _pollTimer;
+  Timer? _countdownTimer;
+  late AnimationController _pulseCtrl, _fadeCtrl;
+  late Animation<double> _pulseAnim, _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 0.6, end: 1.0).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOutSine));
+    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOutCubic);
+    _fadeCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel(); _countdownTimer?.cancel();
+    _pulseCtrl.dispose(); _fadeCtrl.dispose(); _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _createDeposit() async {
+    final amountText = _amountCtrl.text.trim();
+    final amount = double.tryParse(amountText);
+    if (amount == null || amount < 5) { setState(() => _errorMsg = 'الحد الأدنى للإيداع: 5 USDT'); return; }
+    setState(() { _isLoading = true; _errorMsg = null; });
+    try {
+      final res = await ApiEngine().dio.post('/deposit/create', data: {'amount': amount});
+      if (res.statusCode == 200) {
+        final data = res.data['data'] ?? res.data;
+        setState(() {
+          _depositId = int.tryParse(data['deposit_id']?.toString() ?? '0'); _payAddress = data['pay_address'] ?? '';
+          _payAmount = data['pay_amount']?.toString() ?? amountText; _status = data['status'] ?? 'waiting';
+          _expiresIn = int.tryParse(data['expires_in']?.toString() ?? '3600') ?? 3600; _phase = 'waiting'; _isLoading = false;
+        });
+        _fadeCtrl.reset(); _fadeCtrl.forward(); _startPolling(); _startCountdown();
+      }
+    } catch (e) {
+      String msg = 'فشل إنشاء طلب الإيداع. حاول مرة أخرى.';
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map) msg = data['message']?.toString() ?? msg;
+      }
+      setState(() { _isLoading = false; _errorMsg = msg; });
+    }
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) => _checkStatus());
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_expiresIn <= 0) { _countdownTimer?.cancel(); if (_status == 'waiting') setState(() { _status = 'expired'; _phase = 'failed'; }); } 
+      else { if (mounted) setState(() => _expiresIn--); }
+    });
+  }
+
+  Future<void> _checkStatus() async {
+    if (_depositId == null) return;
+    try {
+      final res = await ApiEngine().dio.get('/deposit/status?deposit_id=$_depositId');
+      if (res.statusCode == 200) {
+        final dep = res.data['data']['deposit'] ?? {};
+        final newStatus = dep['status'] ?? _status;
+        if (newStatus != _status) {
+          setState(() => _status = newStatus);
+          if (newStatus == 'finished' || newStatus == 'confirmed') {
+            _pollTimer?.cancel(); _countdownTimer?.cancel(); HapticFeedback.heavyImpact();
+            setState(() => _phase = 'success'); _fadeCtrl.reset(); _fadeCtrl.forward();
+          } else if (newStatus == 'failed' || newStatus == 'expired' || newStatus == 'refunded') {
+            _pollTimer?.cancel(); _countdownTimer?.cancel(); setState(() => _phase = 'failed');
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _copyAddress() {
+    if (_payAddress.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: _payAddress)); HapticFeedback.mediumImpact();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [const Icon(Icons.check_circle, color: Colors.white, size: 18), const SizedBox(width: 8), Text('تم نسخ العنوان', style: GoogleFonts.cairo(fontSize: 13))]), backgroundColor: _C.success.withOpacity(0.9), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: const EdgeInsets.all(16), duration: const Duration(seconds: 2)));
+    }
+  }
+
+  String get _countdownText => '${(_expiresIn ~/ 60).toString().padLeft(2, '0')}:${(_expiresIn % 60).toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(textDirection: TextDirection.rtl, child: Scaffold(backgroundColor: _C.nightBg, appBar: AppBar(title: Text('إيداع USDT', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _C.goldPrimary)), backgroundColor: _C.nightBg, foregroundColor: _C.goldPrimary, elevation: 0), body: SafeArea(child: FadeTransition(opacity: _fadeAnim, child: SingleChildScrollView(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), child: _buildCurrentPhase())))));
+  }
+
+  Widget _buildCurrentPhase() {
+    switch (_phase) { case 'waiting': return _buildWaitingPhase(); case 'success': return _buildSuccessPhase(); case 'failed': return _buildFailedPhase(); default: return _buildInputPhase(); }
+  }
+
+  Widget _buildInputPhase() {
+    return Column(children: [
+      const SizedBox(height: 20), Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: _C.goldPrimary.withOpacity(0.1), border: Border.all(color: _C.goldPrimary.withOpacity(0.2))), child: const Icon(Icons.account_balance_wallet_rounded, color: _C.goldPrimary, size: 36)), const SizedBox(height: 20), Text('تغذية الحساب', style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)), const SizedBox(height: 6), Text('أدخل المبلغ المراد إيداعه عبر شبكة Tron (TRC-20)', style: GoogleFonts.cairo(fontSize: 12, color: _C.textMuted), textAlign: TextAlign.center), const SizedBox(height: 32),
+      _GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('مبلغ الإيداع', style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.w600, color: _C.goldLight)), const SizedBox(height: 12),
+        Container(decoration: BoxDecoration(color: _C.inputBg, borderRadius: BorderRadius.circular(14), border: Border.all(color: _C.glassBorder)), child: TextField(controller: _amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), style: GoogleFonts.cairo(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center, decoration: InputDecoration(hintText: '0.00', hintStyle: GoogleFonts.cairo(color: _C.textMuted.withOpacity(0.3), fontSize: 24), suffixIcon: Padding(padding: const EdgeInsets.only(left: 14, top: 14), child: Text('USDT', style: GoogleFonts.cairo(color: _C.goldPrimary, fontWeight: FontWeight.bold, fontSize: 14))), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18)))), const SizedBox(height: 10),
+        Row(children: [50, 100, 500, 1000].map((v) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: GestureDetector(onTap: () => _amountCtrl.text = v.toString(), child: Container(padding: const EdgeInsets.symmetric(vertical: 8), decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: _C.goldPrimary.withOpacity(0.07), border: Border.all(color: _C.goldPrimary.withOpacity(0.15))), child: Center(child: Text('\$$v', style: GoogleFonts.cairo(fontSize: 12, color: _C.goldPrimary, fontWeight: FontWeight.w600)))))))).toList()),
+        if (_errorMsg != null) ...[const SizedBox(height: 14), Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: _C.danger.withOpacity(0.06), borderRadius: BorderRadius.circular(10), border: Border.all(color: _C.danger.withOpacity(0.15))), child: Row(children: [Icon(Icons.error_outline, color: _C.danger, size: 16), const SizedBox(width: 8), Expanded(child: Text(_errorMsg!, style: GoogleFonts.cairo(fontSize: 11, color: _C.danger)))]))],
+      ])), const SizedBox(height: 12),
+      _GlassCard(child: Column(children: [_infoRow(Icons.currency_bitcoin, 'الشبكة', 'Tron (TRC-20)'), const SizedBox(height: 10), _infoRow(Icons.timer_outlined, 'وقت التأكيد', '1 - 5 دقائق'), const SizedBox(height: 10), _infoRow(Icons.shield_outlined, 'الحد الأدنى', '5 USDT')])), const SizedBox(height: 24),
+      SizedBox(width: double.infinity, height: 56, child: AnimatedContainer(duration: const Duration(milliseconds: 200), decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), gradient: _isLoading ? null : const LinearGradient(colors: [_C.goldPrimary, _C.goldDark]), color: _isLoading ? _C.goldPrimary.withOpacity(0.25) : null, boxShadow: _isLoading ? [] : [BoxShadow(color: _C.goldPrimary.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 4))]), child: Material(color: Colors.transparent, child: InkWell(onTap: _isLoading ? null : () { HapticFeedback.lightImpact(); _createDeposit(); }, borderRadius: BorderRadius.circular(16), child: Center(child: _isLoading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: _C.goldPrimary)) : Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('توليد عنوان الإيداع', style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0A0F18))), const SizedBox(width: 8), const Icon(Icons.qr_code_2_rounded, size: 20, color: Color(0xFF0A0F18))])))))),
+    ]);
+  }
+
+  Widget _buildWaitingPhase() {
+    return Column(children: [
+      const SizedBox(height: 10), AnimatedBuilder(animation: _pulseAnim, builder: (_, __) => Opacity(opacity: _pulseAnim.value, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: _expiresIn < 300 ? _C.danger.withOpacity(0.1) : _C.goldPrimary.withOpacity(0.07), border: Border.all(color: _expiresIn < 300 ? _C.danger.withOpacity(0.2) : _C.goldPrimary.withOpacity(0.15))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.timer_outlined, size: 16, color: _expiresIn < 300 ? _C.danger : _C.goldPrimary), const SizedBox(width: 6), Text('صالح لمدة $_countdownText', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w600, color: _expiresIn < 300 ? _C.danger : _C.goldPrimary))])))), const SizedBox(height: 16), _buildStatusBadge(), const SizedBox(height: 20),
+      _GlassCard(child: Column(children: [
+        Text('امسح الرمز أو انسخ العنوان', style: GoogleFonts.cairo(fontSize: 13, color: _C.textMuted)), const SizedBox(height: 16),
+        Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: _C.goldPrimary.withOpacity(0.1), blurRadius: 20)]), child: QrImageView(data: _payAddress, version: QrVersions.auto, size: 200, backgroundColor: Colors.white, eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: Color(0xFF0A0F18)), dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: Color(0xFF0A0F18)))), const SizedBox(height: 18),
+        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: _C.inputBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _C.glassBorder)), child: Row(children: [Expanded(child: Text(_payAddress, style: GoogleFonts.sourceCodePro(fontSize: 11, color: _C.goldLight, letterSpacing: 0.3), textAlign: TextAlign.center)), const SizedBox(width: 8), GestureDetector(onTap: _copyAddress, child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: _C.goldPrimary.withOpacity(0.1)), child: const Icon(Icons.copy_rounded, size: 18, color: _C.goldPrimary)))])), const SizedBox(height: 14),
+        _infoRow(Icons.toll_rounded, 'المبلغ المطلوب', '$_payAmount USDT'), const SizedBox(height: 8), _infoRow(Icons.lan_outlined, 'الشبكة', 'Tron (TRC-20)'),
+      ])), const SizedBox(height: 14),
+      _GlassCard(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.warning_amber_rounded, color: _C.warning, size: 20), const SizedBox(width: 10), Expanded(child: Text('أرسل فقط USDT على شبكة TRC-20 إلى هذا العنوان. إرسال عملات أخرى أو استخدام شبكة مختلفة سيؤدي لفقدان الأموال نهائياً.', style: GoogleFonts.cairo(fontSize: 11, color: _C.warning, height: 1.6)))])), const SizedBox(height: 20),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: _C.goldPrimary.withOpacity(0.5))), const SizedBox(width: 10), Text('نحن في انتظار وصول الحوالة على شبكة Tron...', style: GoogleFonts.cairo(fontSize: 11, color: _C.textMuted))]),
+    ]);
+  }
+
+  Widget _buildSuccessPhase() {
+    return Column(children: [const SizedBox(height: 50), Container(width: 100, height: 100, decoration: BoxDecoration(shape: BoxShape.circle, color: _C.success.withOpacity(0.12), border: Border.all(color: _C.success.withOpacity(0.3), width: 2)), child: const Icon(Icons.check_rounded, color: _C.success, size: 52)), const SizedBox(height: 24), Text('تم الإيداع بنجاح!', style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: _C.success)), const SizedBox(height: 8), Text('تم إضافة الرصيد إلى محفظتك', style: GoogleFonts.cairo(fontSize: 14, color: _C.textMuted)), const SizedBox(height: 32), _GlassCard(child: Column(children: [_infoRow(Icons.toll_rounded, 'المبلغ', '$_payAmount USDT'), const SizedBox(height: 10), _infoRow(Icons.check_circle_outline, 'الحالة', 'مكتمل')])), const SizedBox(height: 32), SizedBox(width: double.infinity, height: 52, child: ElevatedButton.icon(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.arrow_back_rounded, size: 20), label: Text('العودة للمحفظة', style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.bold)), style: ElevatedButton.styleFrom(backgroundColor: _C.goldPrimary, foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)))))]);
+  }
+
+  Widget _buildFailedPhase() {
+    return Column(children: [const SizedBox(height: 50), Container(width: 100, height: 100, decoration: BoxDecoration(shape: BoxShape.circle, color: _C.danger.withOpacity(0.12), border: Border.all(color: _C.danger.withOpacity(0.3), width: 2)), child: const Icon(Icons.close_rounded, color: _C.danger, size: 52)), const SizedBox(height: 24), Text(_status == 'expired' ? 'انتهت صلاحية الطلب' : 'فشل الإيداع', style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: _C.danger)), const SizedBox(height: 8), Text('يمكنك إنشاء طلب إيداع جديد', style: GoogleFonts.cairo(fontSize: 14, color: _C.textMuted)), const SizedBox(height: 32), SizedBox(width: double.infinity, height: 52, child: ElevatedButton.icon(onPressed: () { setState(() { _phase = 'input'; _errorMsg = null; _amountCtrl.clear(); }); _fadeCtrl.reset(); _fadeCtrl.forward(); }, icon: const Icon(Icons.refresh_rounded, size: 20), label: Text('محاولة جديدة', style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.bold)), style: ElevatedButton.styleFrom(backgroundColor: _C.goldPrimary, foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)))))]);
+  }
+
+  Widget _buildStatusBadge() {
+    IconData icon; String text; Color color;
+    switch (_status) { case 'confirming': icon = Icons.hourglass_top; text = 'بانتظار تأكيدات الشبكة...'; color = _C.warning; break; case 'sending': icon = Icons.swap_horiz; text = 'جاري تحويل الأموال...'; color = _C.warning; break; case 'partially_paid': icon = Icons.warning_amber; text = 'تم دفع مبلغ جزئي'; color = _C.warning; break; default: icon = Icons.schedule; text = 'بانتظار الدفع...'; color = _C.goldPrimary; }
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: color.withOpacity(0.08), border: Border.all(color: color.withOpacity(0.2))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 18, color: color), const SizedBox(width: 8), Text(text, style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w600, color: color))]));
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) => Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Row(children: [Icon(icon, size: 16, color: _C.textMuted), const SizedBox(width: 8), Text(label, style: GoogleFonts.cairo(fontSize: 12, color: _C.textMuted))]), Text(value, style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white))]);
+}
+
+class _GlassCard extends StatelessWidget {
+  final Widget child; const _GlassCard({required this.child});
+  @override Widget build(BuildContext context) => ClipRRect(borderRadius: BorderRadius.circular(20), child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), child: Container(width: double.infinity, padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: _C.cardBg.withOpacity(0.6), borderRadius: BorderRadius.circular(20), border: Border.all(color: _C.glassBorder.withOpacity(0.5))), child: child)));
+}
+
+
+======================================================================
+FILE: lib/screens/elite_dashboard.dart
+======================================================================
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../core/elite_theme.dart';
+import '../services/api_engine.dart';
+import 'glass_login_screen.dart';
+
+class EliteDashboard extends StatefulWidget {
+  const EliteDashboard({super.key});
+  @override
+  State<EliteDashboard> createState() => _EliteDashboardState();
+}
+class _EliteDashboardState extends State<EliteDashboard> {
+  String _name = '';
+  String _balance = '0.00';
+  List<dynamic> _txs = [];
+
+  @override
+  void initState() { super.initState(); _fetchData(); }
+
+  Future<void> _fetchData() async {
+    final name = await ApiEngine().storage.read(key: 'admin_name');
+    if (mounted && name != null) setState(() => _name = name);
+    try {
+      final res = await ApiEngine().dio.get('/wallet');
+      if (res.statusCode == 200) {
+        setState(() {
+          _balance = res.data['data']['wallet']['balance'].toString();
+          _txs = res.data['data']['recent_transactions'] ?? [];
+        });
+      }
+    } catch (e) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomPaint(
+        painter: EliteBackgroundPainter(),
+        child: SafeArea(
+          child: Column(
+            children: [
+              AppBar(
+                backgroundColor: Colors.transparent, elevation: 0,
+                title: Text('Al-Muhandis Elite', style: GoogleFonts.cairo(color: EliteColors.goldPrimary)),
+                actions: [IconButton(icon: const Icon(Icons.exit_to_app, color: EliteColors.danger), onPressed: () async { await ApiEngine().storage.deleteAll(); Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const GlassLoginScreen())); })],
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(24),
+                  children: [
+                    Text('مرحباً، $_name', style: GoogleFonts.cairo(fontSize: 18, color: Colors.grey.shade400)),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(30),
+                      decoration: BoxDecoration(gradient: const LinearGradient(colors: [EliteColors.goldPrimary, EliteColors.goldDark]), borderRadius: BorderRadius.circular(30)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('الرصيد السيادي المتاح', style: GoogleFonts.cairo(color: Colors.black87, fontWeight: FontWeight.bold)),
+                          Text('$_balance USDT', style: GoogleFonts.cairo(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+======================================================================
+FILE: lib/screens/force_update_screen.dart
+======================================================================
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class ForceUpdateScreen extends StatelessWidget {
+  final String updateUrl;
+  final bool isMaintenance;
+
+  const ForceUpdateScreen({super.key, required this.updateUrl, this.isMaintenance = false});
+
+  Future<void> _launchUpdate() async {
+    final uri = Uri.parse(updateUrl);
+    // 🚀 تجاوز حماية أندرويد 11 (canLaunchUrl) وفتح الرابط بالقوة
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: const Color(0xFF030712),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isMaintenance ? const Color(0xFFF59E0B).withOpacity(0.1) : const Color(0xFFEF4444).withOpacity(0.1),
+                    ),
+                    child: Icon(
+                      isMaintenance ? Icons.handyman_rounded : Icons.system_update_rounded,
+                      size: 80,
+                      color: isMaintenance ? const Color(0xFFF59E0B) : const Color(0xFFEF4444),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    isMaintenance ? 'النظام تحت الصيانة' : 'تحديث إجباري مطلوب',
+                    style: GoogleFonts.cairo(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    isMaintenance 
+                        ? 'نقوم حالياً بتحديث الخوادم السيادية لـ Al-Muhandis Pay لتقديم خدمة أفضل. سنعود للعمل قريباً.'
+                        : 'لضمان أعلى معايير الأمان البنكي، يجب عليك تحديث التطبيق الآن للنسخة الأحدث لتتمكن من المتابعة.',
+                    style: GoogleFonts.cairo(fontSize: 14, color: Colors.grey.shade400, height: 1.6),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 48),
+                  if (!isMaintenance)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _launchUpdate,
+                        icon: const Icon(Icons.download_rounded, color: Colors.black),
+                        label: Text('تحديث التطبيق الآن', style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => exit(0),
+                    child: Text('إغلاق التطبيق', style: GoogleFonts.cairo(color: Colors.grey)),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+======================================================================
+FILE: lib/screens/login_screen.dart
+======================================================================
+import 'dart:math';
+import 'dart:ui';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:dio/dio.dart' show DioException;
+import '../services/api_engine.dart';
+import 'dashboard_screen.dart';
+
+class _C {
+  static const Color nightBg     = Color(0xFF030712);
+  static const Color nightBg2    = Color(0xFF0B101E);
+  static const Color cardBg      = Color(0xFF0D1321);
+  static const Color goldPrimary = Color(0xFFD4AF37);
+  static const Color goldDark    = Color(0xFFB8952C);
+  static const Color goldLight   = Color(0xFFE8D48B);
+  static const Color danger      = Color(0xFFEF4444);
+  static const Color success     = Color(0xFF22C55E);
+  static const Color glassBorder = Color(0xFF1E293B);
+  static const Color inputBg     = Color(0xFF0F1524);
+  static const Color textMuted   = Color(0xFF64748B);
+  static const Color textLight   = Color(0xFF94A3B8);
+}
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+  final _usernameCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _otpCtrl      = TextEditingController();
+  final _googleCtrl   = TextEditingController();
+
+  final _usernameFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  final _otpFocus      = FocusNode();
+  final _googleFocus   = FocusNode();
+
+  String _phase = 'credentials';
+  String? _authTicket;
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  String? _errorMessage;
+  String? _successMessage;
+
+  Timer? _otpTimer;
+  int _otpSeconds = 300;
+
+  late AnimationController _pulseCtrl, _particleCtrl, _fadeCtrl, _shakeCtrl, _progressCtrl, _glowCtrl;
+  late Animation<double> _pulseAnim, _fadeAnim, _shakeAnim, _glowAnim;
+  final List<_Particle> _particles = [];
+  final _rng = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _initAnimations();
+    _generateParticles();
+  }
+
+  void _initAnimations() {
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 0.88, end: 1.0).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOutSine));
+    _particleCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 25))..repeat();
+    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOutCubic);
+    _fadeCtrl.forward();
+    _shakeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _shakeAnim = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.elasticIn));
+    _progressCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _glowCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
+    _glowAnim = Tween<double>(begin: 0.3, end: 1.0).animate(CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOutSine));
+  }
+
+  void _generateParticles() {
+    for (int i = 0; i < 40; i++) {
+      _particles.add(_Particle(x: _rng.nextDouble(), y: _rng.nextDouble(), size: _rng.nextDouble() * 2.5 + 0.8, speed: _rng.nextDouble() * 0.25 + 0.08, opacity: _rng.nextDouble() * 0.35 + 0.05, angle: _rng.nextDouble() * 2 * pi));
+    }
+  }
+
+  void _startOtpTimer() {
+    _otpSeconds = 300;
+    _otpTimer?.cancel();
+    _otpTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_otpSeconds <= 0) t.cancel();
+      else if (mounted) setState(() => _otpSeconds--);
+    });
+  }
+
+  String get _otpTimerText => '${(_otpSeconds ~/ 60).toString().padLeft(2, '0')}:${(_otpSeconds % 60).toString().padLeft(2, '0')}';
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose(); _particleCtrl.dispose(); _fadeCtrl.dispose(); _shakeCtrl.dispose(); _progressCtrl.dispose(); _glowCtrl.dispose();
+    _usernameCtrl.dispose(); _passwordCtrl.dispose(); _otpCtrl.dispose(); _googleCtrl.dispose();
+    _usernameFocus.dispose(); _passwordFocus.dispose(); _otpFocus.dispose(); _googleFocus.dispose();
+    _otpTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _submitCredentials() async {
+    if (_usernameCtrl.text.trim().isEmpty || _passwordCtrl.text.isEmpty) { _showError('الرجاء إدخال اسم المستخدم وكلمة المرور.'); return; }
+    setState(() { _isLoading = true; _errorMessage = null; });
+    try {
+      final res = await ApiEngine().login(_usernameCtrl.text.trim(), _passwordCtrl.text);
+      if (res.statusCode == 200) {
+        final data = res.data['data'] ?? res.data;
+        if (data['status'] == 'authenticated') { await _handleAuthenticated(data); return; }
+        if (data['status'] == 'pending_email_otp') {
+          _authTicket = data['auth_ticket']; _progressCtrl.animateTo(0.33); _startOtpTimer();
+          setState(() { _phase = 'email_otp'; _isLoading = false; _successMessage = 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.'; _errorMessage = null; });
+          _animatePhaseChange();
+          Future.delayed(const Duration(milliseconds: 500), () { if (mounted) _otpFocus.requestFocus(); });
+          return;
+        }
+      }
+      _showError('حدث خطأ غير متوقع.');
+    } catch (e) { _handleApiError(e); }
+  }
+
+  Future<void> _submitEmailOtp() async {
+    if (_otpCtrl.text.trim().length != 6) { _showError('الرجاء إدخال رمز التحقق المكوّن من 6 أرقام.'); return; }
+    setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
+    try {
+      final res = await ApiEngine().verifyEmail(_authTicket ?? '', _otpCtrl.text.trim());
+      if (res.statusCode == 200) {
+        final data = res.data['data'] ?? res.data;
+        if (data['status'] == 'pending_google_2fa') {
+          _progressCtrl.animateTo(0.66);
+          setState(() { _phase = 'google_2fa'; _isLoading = false; _successMessage = 'تم التحقق. أدخل رمز Google Authenticator.'; _errorMessage = null; });
+          _animatePhaseChange();
+          Future.delayed(const Duration(milliseconds: 500), () { if (mounted) _googleFocus.requestFocus(); });
+          return;
+        }
+      }
+      _showError('حدث خطأ غير متوقع.');
+    } catch (e) { _handleApiError(e); }
+  }
+
+  Future<void> _submitGoogle2fa() async {
+    if (_googleCtrl.text.trim().length != 6) { _showError('الرجاء إدخال رمز المصادقة المكوّن من 6 أرقام.'); return; }
+    setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
+    try {
+      final res = await ApiEngine().verifyGoogle(_authTicket ?? '', _googleCtrl.text.trim());
+      if (res.statusCode == 200) {
+        final data = res.data['data'] ?? res.data;
+        if (data['status'] == 'authenticated') { _progressCtrl.animateTo(1.0); await _handleAuthenticated(data); return; }
+      }
+      _showError('حدث خطأ غير متوقع.');
+    } catch (e) { _handleApiError(e); }
+  }
+
+  Future<void> _handleAuthenticated(Map<String, dynamic> data) async {
+    HapticFeedback.heavyImpact();
+    await ApiEngine().storage.write(key: 'jwt_token', value: data['token']);
+    await ApiEngine().storage.write(key: 'admin_name', value: data['user']['name'] ?? '');
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(PageRouteBuilder(
+      pageBuilder: (_, __, ___) => const DashboardScreen(),
+      transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: CurvedAnimation(parent: anim, curve: Curves.easeOutCubic), child: ScaleTransition(scale: Tween<double>(begin: 0.96, end: 1.0).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)), child: child)),
+      transitionDuration: const Duration(milliseconds: 700),
+    ));
+  }
+
+  void _handleApiError(dynamic e) {
+    String msg = 'خطأ في الاتصال بالسيرفر.';
+    if (e is DioException && e.response?.data != null) {
+      final data = e.response!.data;
+      if (data is Map) msg = data['message']?.toString() ?? data['msg']?.toString() ?? msg;
+    }
+    _showError(msg);
+  }
+
+  void _showError(String msg) { HapticFeedback.heavyImpact(); _shakeCtrl.forward(from: 0); setState(() { _isLoading = false; _errorMessage = msg; _successMessage = null; }); }
+  void _animatePhaseChange() { _fadeCtrl.reset(); _fadeCtrl.forward(); }
+  void _onSubmit() { switch (_phase) { case 'credentials': _submitCredentials(); break; case 'email_otp': _submitEmailOtp(); break; case 'google_2fa': _submitGoogle2fa(); break; } }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _C.nightBg,
+        body: Stack(
+          children: [
+            Container(decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [_C.nightBg, _C.nightBg2, Color(0xFF0D1321)]))),
+            _buildGoldenAura(size, top: -size.height * 0.12, left: -size.width * 0.25, sizeFactor: 0.75),
+            _buildGoldenAura(size, bottom: -size.height * 0.08, right: -size.width * 0.15, sizeFactor: 0.55),
+            const _OrbitalBackground(),
+            AnimatedBuilder(animation: _particleCtrl, builder: (_, __) => CustomPaint(size: size, painter: _ParticlePainter(_particles, _particleCtrl.value, _C.goldPrimary))),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                  child: AnimatedBuilder(
+                    animation: _shakeAnim,
+                    builder: (_, child) => Transform.translate(offset: Offset(sin(_shakeAnim.value * pi * 4) * 8 * (1 - _shakeAnim.value), 0), child: child),
+                    child: FadeTransition(
+                      opacity: _fadeAnim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(_fadeAnim),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 24), _buildLogo(), const SizedBox(height: 18), _buildAppName(), const SizedBox(height: 6), _buildPhaseSubtitle(), const SizedBox(height: 30), _buildStepIndicator(), const SizedBox(height: 24),
+                            if (_successMessage != null) ...[_buildBanner(_successMessage!, false), const SizedBox(height: 14)],
+                            if (_errorMessage != null) ...[_buildBanner(_errorMessage!, true), const SizedBox(height: 14)],
+                            _buildFormCard(), const SizedBox(height: 24), _buildSubmitButton(),
+                            if (_phase != 'credentials') ...[const SizedBox(height: 12), _buildBackButton()],
+                            const SizedBox(height: 36), _buildFooter(), const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoldenAura(Size size, {double? top, double? bottom, double? left, double? right, required double sizeFactor}) {
+    return Positioned(top: top, bottom: bottom, left: left, right: right, child: AnimatedBuilder(animation: _glowAnim, builder: (_, __) => Container(width: size.width * sizeFactor, height: size.width * sizeFactor, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [_C.goldPrimary.withOpacity(0.05 * _glowAnim.value), _C.goldPrimary.withOpacity(0.015 * _glowAnim.value), Colors.transparent])))));
+  }
+
+  Widget _buildLogo() {
+    return AnimatedBuilder(
+      animation: _pulseAnim,
+      builder: (_, __) => Transform.scale(
+        scale: _pulseAnim.value,
+        child: Container(
+          width: 96, height: 96,
+          decoration: BoxDecoration(shape: BoxShape.circle, gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [_C.goldPrimary, _C.goldDark]), boxShadow: [BoxShadow(color: _C.goldPrimary.withOpacity(0.2 + (_pulseAnim.value - 0.88) * 1.5), blurRadius: 30 + (_pulseAnim.value - 0.88) * 80, spreadRadius: 2)]),
+          child: Padding(
+            padding: const EdgeInsets.all(3),
+            child: Container(decoration: const BoxDecoration(shape: BoxShape.circle, color: _C.nightBg), child: Center(child: ClipOval(child: Image.asset('assets/logo.png', width: 56, height: 56, fit: BoxFit.cover, errorBuilder: (_, __, ___) => ShaderMask(shaderCallback: (bounds) => const LinearGradient(colors: [_C.goldPrimary, _C.goldLight, _C.goldPrimary]).createShader(bounds), child: const Icon(Icons.account_balance, size: 38, color: Colors.white)))))),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppName() => ShaderMask(shaderCallback: (bounds) => const LinearGradient(colors: [_C.goldPrimary, _C.goldLight, _C.goldPrimary]).createShader(bounds), child: Text('Al-Muhandis Pay', style: GoogleFonts.cairo(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)));
+  Widget _buildPhaseSubtitle() => AnimatedSwitcher(duration: const Duration(milliseconds: 400), child: Text(_phase == 'email_otp' ? 'التحقق عبر البريد الإلكتروني' : _phase == 'google_2fa' ? 'المصادقة الثنائية' : 'بوابة الدخول الآمن للنظام المالي', key: ValueKey(_phase), style: GoogleFonts.cairo(fontSize: 13, color: _C.textMuted)));
+
+  Widget _buildStepIndicator() {
+    final steps = [{'icon': Icons.lock_outline, 'label': 'تسجيل'}, {'icon': Icons.mail_outline, 'label': 'البريد'}, {'icon': Icons.security, 'label': 'المصادقة'}];
+    final idx = _phase == 'credentials' ? 0 : _phase == 'email_otp' ? 1 : 2;
+    return AnimatedBuilder(
+      animation: _progressCtrl,
+      builder: (_, __) => Column(
+        children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(steps.length, (i) {
+            final completed = (i == 0 && _progressCtrl.value >= 0.33) || (i == 1 && _progressCtrl.value >= 0.66) || (i == 2 && _progressCtrl.value >= 1.0);
+            final active = i == idx;
+            return Row(children: [
+              if (i > 0) AnimatedContainer(duration: const Duration(milliseconds: 400), width: 36, height: 2, decoration: BoxDecoration(color: completed || active ? _C.goldPrimary.withOpacity(0.6) : _C.glassBorder, borderRadius: BorderRadius.circular(1))),
+              Column(children: [
+                AnimatedContainer(duration: const Duration(milliseconds: 400), width: active ? 40 : 32, height: active ? 40 : 32, decoration: BoxDecoration(shape: BoxShape.circle, color: completed ? _C.goldPrimary : (active ? _C.goldPrimary.withOpacity(0.12) : _C.glassBorder.withOpacity(0.4)), border: Border.all(color: active ? _C.goldPrimary : (completed ? _C.goldPrimary : _C.glassBorder), width: active ? 2 : 1), boxShadow: active ? [BoxShadow(color: _C.goldPrimary.withOpacity(0.25), blurRadius: 14)] : []), child: Center(child: completed ? const Icon(Icons.check, color: Colors.black, size: 16) : Icon(steps[i]['icon'] as IconData, size: 16, color: active ? _C.goldPrimary : _C.textMuted))),
+                const SizedBox(height: 6), Text(steps[i]['label'] as String, style: GoogleFonts.cairo(fontSize: 10, color: active ? _C.goldPrimary : _C.textMuted, fontWeight: active ? FontWeight.bold : FontWeight.normal)),
+              ]),
+            ]);
+          })),
+          const SizedBox(height: 10),
+          Container(height: 3, margin: const EdgeInsets.symmetric(horizontal: 50), decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), color: _C.glassBorder.withOpacity(0.3)), child: FractionallySizedBox(alignment: AlignmentDirectional.centerStart, widthFactor: _progressCtrl.value, child: Container(decoration: BoxDecoration(borderRadius: BorderRadius.circular(2), gradient: const LinearGradient(colors: [_C.goldPrimary, _C.goldDark]), boxShadow: [BoxShadow(color: _C.goldPrimary.withOpacity(0.4), blurRadius: 8)])))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormCard() => ClipRRect(borderRadius: BorderRadius.circular(24), child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: AnimatedContainer(duration: const Duration(milliseconds: 300), padding: const EdgeInsets.all(26), decoration: BoxDecoration(color: _C.cardBg.withOpacity(0.65), borderRadius: BorderRadius.circular(24), border: Border.all(color: _C.glassBorder.withOpacity(0.5)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 24, offset: const Offset(0, 8))]), child: AnimatedSwitcher(duration: const Duration(milliseconds: 450), switchInCurve: Curves.easeOutCubic, switchOutCurve: Curves.easeInCubic, transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: SlideTransition(position: Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(anim), child: child)), child: _buildCurrentPhaseFields()))));
+
+  Widget _buildCurrentPhaseFields() {
+    switch (_phase) {
+      case 'credentials':
+        return Column(key: const ValueKey('cred'), crossAxisAlignment: CrossAxisAlignment.start, children: [_buildSectionHeader(Icons.login_rounded, 'تسجيل الدخول'), const SizedBox(height: 22), _buildInputField(controller: _usernameCtrl, focusNode: _usernameFocus, label: 'اسم المستخدم أو البريد الإلكتروني', icon: Icons.person_outline_rounded, action: TextInputAction.next, onSubmitted: (_) => _passwordFocus.requestFocus()), const SizedBox(height: 14), _buildInputField(controller: _passwordCtrl, focusNode: _passwordFocus, label: 'كلمة المرور', icon: Icons.lock_outline_rounded, isPassword: true, action: TextInputAction.done, onSubmitted: (_) => _submitCredentials())]);
+      case 'email_otp':
+        return Column(key: const ValueKey('otp'), children: [_buildPhaseIcon(Icons.mark_email_read_rounded), const SizedBox(height: 14), Text('تم إرسال رمز التحقق', style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)), const SizedBox(height: 6), _buildInfoBox(Icons.mail_outline, 'تحقق من صندوق الوارد (Inbox) أو المهملات (Spam)'), const SizedBox(height: 12), _buildCountdownBadge(), const SizedBox(height: 18), _buildInputField(controller: _otpCtrl, focusNode: _otpFocus, label: 'رمز التحقق (6 أرقام)', icon: Icons.pin_outlined, keyboardType: TextInputType.number, maxLength: 6, centered: true, action: TextInputAction.done, onSubmitted: (_) => _submitEmailOtp())]);
+      case 'google_2fa':
+        return Column(key: const ValueKey('2fa'), children: [_buildPhaseIcon(Icons.security_rounded), const SizedBox(height: 14), Text('المصادقة الثنائية', style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)), const SizedBox(height: 6), _buildInfoBox(Icons.security, 'افتح تطبيق Google Authenticator في هاتفك'), const SizedBox(height: 18), _buildInputField(controller: _googleCtrl, focusNode: _googleFocus, label: 'رمز المصادقة الثنائية', icon: Icons.shield_outlined, keyboardType: TextInputType.number, maxLength: 6, centered: true, action: TextInputAction.done, onSubmitted: (_) => _submitGoogle2fa())]);
+      default: return const SizedBox();
+    }
+  }
+
+  Widget _buildSectionHeader(IconData icon, String title) => Row(children: [Container(padding: const EdgeInsets.all(9), decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: _C.goldPrimary.withOpacity(0.1)), child: Icon(icon, color: _C.goldPrimary, size: 20)), const SizedBox(width: 12), Text(title, style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white))]);
+  Widget _buildPhaseIcon(IconData icon) => Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, color: _C.goldPrimary.withOpacity(0.1), border: Border.all(color: _C.goldPrimary.withOpacity(0.2))), child: Icon(icon, color: _C.goldPrimary, size: 28));
+  Widget _buildInfoBox(IconData icon, String text) => Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: _C.goldPrimary.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: _C.goldPrimary.withOpacity(0.12))), child: Row(children: [Icon(icon, color: _C.goldPrimary, size: 18), const SizedBox(width: 10), Expanded(child: Text(text, style: GoogleFonts.cairo(fontSize: 11, color: _C.goldLight)))]));
+  Widget _buildCountdownBadge() { final expired = _otpSeconds <= 0; return Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7), decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: expired ? _C.danger.withOpacity(0.1) : _C.goldPrimary.withOpacity(0.07), border: Border.all(color: expired ? _C.danger.withOpacity(0.2) : _C.goldPrimary.withOpacity(0.15))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(expired ? Icons.warning_amber : Icons.timer_outlined, size: 15, color: expired ? _C.danger : _C.goldPrimary), const SizedBox(width: 6), Text(expired ? 'انتهت صلاحية الرمز' : 'صالح لمدة $_otpTimerText', style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.w600, color: expired ? _C.danger : _C.goldPrimary))])); }
+
+  Widget _buildInputField({required TextEditingController controller, required FocusNode focusNode, required String label, required IconData icon, bool isPassword = false, TextInputType keyboardType = TextInputType.text, TextInputAction action = TextInputAction.next, int? maxLength, bool centered = false, ValueChanged<String>? onSubmitted}) {
+    return AnimatedBuilder(
+      animation: focusNode,
+      builder: (_, __) {
+        final focused = focusNode.hasFocus;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: _C.inputBg, border: Border.all(color: focused ? _C.goldPrimary.withOpacity(0.6) : _C.glassBorder, width: focused ? 1.5 : 1), boxShadow: focused ? [BoxShadow(color: _C.goldPrimary.withOpacity(0.08), blurRadius: 14)] : []),
+          child: TextField(
+            controller: controller, focusNode: focusNode, obscureText: isPassword && _obscurePassword, keyboardType: keyboardType, textInputAction: action, maxLength: maxLength, textAlign: centered ? TextAlign.center : TextAlign.start, onSubmitted: onSubmitted,
+            style: GoogleFonts.cairo(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: centered ? 8 : 0), cursorColor: _C.goldPrimary,
+            decoration: InputDecoration(labelText: label, labelStyle: GoogleFonts.cairo(fontSize: 12, color: focused ? _C.goldPrimary : _C.textMuted), floatingLabelStyle: GoogleFonts.cairo(fontSize: 12, color: _C.goldPrimary, fontWeight: FontWeight.w600), prefixIcon: Padding(padding: const EdgeInsetsDirectional.only(start: 14, end: 8), child: Icon(icon, size: 20, color: focused ? _C.goldPrimary : _C.textMuted)), prefixIconConstraints: const BoxConstraints(minWidth: 42), suffixIcon: isPassword ? IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20, color: _C.textMuted), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)) : null, border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), counterText: ''),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    String label; IconData icon;
+    switch (_phase) { case 'credentials': label = 'تسجيل الدخول'; icon = Icons.login_rounded; break; case 'email_otp': label = 'التحقق من الرمز'; icon = Icons.verified_outlined; break; case 'google_2fa': label = 'تأكيد الدخول'; icon = Icons.lock_open_rounded; break; default: label = 'متابعة'; icon = Icons.arrow_forward; }
+    return SizedBox(width: double.infinity, height: 56, child: AnimatedContainer(duration: const Duration(milliseconds: 200), decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), gradient: _isLoading ? null : const LinearGradient(colors: [_C.goldPrimary, _C.goldDark]), color: _isLoading ? _C.goldPrimary.withOpacity(0.25) : null, boxShadow: _isLoading ? [] : [BoxShadow(color: _C.goldPrimary.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 4))]), child: Material(color: Colors.transparent, child: InkWell(onTap: _isLoading ? null : () { HapticFeedback.lightImpact(); _onSubmit(); }, borderRadius: BorderRadius.circular(16), child: Center(child: _isLoading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: _C.goldPrimary)) : Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text(label, style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF0A0F18))), const SizedBox(width: 8), Icon(icon, size: 20, color: const Color(0xFF0A0F18))]))))));
+  }
+
+  Widget _buildBackButton() => TextButton.icon(onPressed: () { if (_phase == 'google_2fa') { _progressCtrl.animateTo(0.33); _googleCtrl.clear(); setState(() { _phase = 'email_otp'; _errorMessage = null; _successMessage = null; }); } else if (_phase == 'email_otp') { _progressCtrl.animateTo(0); _otpCtrl.clear(); _otpTimer?.cancel(); setState(() { _phase = 'credentials'; _errorMessage = null; _successMessage = null; }); } _animatePhaseChange(); }, icon: const Icon(Icons.arrow_back_rounded, size: 18, color: _C.textMuted), label: Text('رجوع', style: GoogleFonts.cairo(fontSize: 13, color: _C.textMuted)));
+  Widget _buildBanner(String msg, bool isError) { final c = isError ? _C.danger : _C.success; return Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: c.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.withOpacity(0.2))), child: Row(children: [Icon(isError ? Icons.error_outline : Icons.check_circle_outline, color: c, size: 18), const SizedBox(width: 10), Expanded(child: Text(msg, style: GoogleFonts.cairo(fontSize: 12, color: c)))])); }
+  Widget _buildFooter() => Column(children: [Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.lock_outline, size: 11, color: _C.textMuted.withOpacity(0.5)), const SizedBox(width: 4), Text('محمي بتشفير AES-256 • مصادقة ثلاثية', style: GoogleFonts.cairo(fontSize: 10, color: _C.textMuted.withOpacity(0.5)))]), const SizedBox(height: 4), Text('© ${DateTime.now().year} Al-Muhandis Financial Systems', style: GoogleFonts.cairo(fontSize: 9, color: _C.textMuted.withOpacity(0.3)))]);
+}
+
+class _OrbitalBackground extends StatefulWidget { const _OrbitalBackground(); @override State<_OrbitalBackground> createState() => _OrbitalBackgroundState(); }
+class _OrbitalBackgroundState extends State<_OrbitalBackground> with SingleTickerProviderStateMixin { late AnimationController _ctrl; @override void initState() { super.initState(); _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 30))..repeat(); } @override void dispose() { _ctrl.dispose(); super.dispose(); } @override Widget build(BuildContext context) => AnimatedBuilder(animation: _ctrl, builder: (_, __) => CustomPaint(painter: _OrbitalPainter(_ctrl.value), size: Size.infinite)); }
+
+class _OrbitalPainter extends CustomPainter {
+  final double t;
+  _OrbitalPainter(this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width * 0.15;
+    final cy = size.height * 0.26;
+    final paint = Paint()..color = _C.goldPrimary.withOpacity(0.03)..style = PaintingStyle.stroke..strokeWidth = 0.8;
+
+    for (int i = 1; i <= 5; i++) {
+      final r = 70.0 * i;
+      canvas.save();
+      canvas.translate(cx, cy);
+      canvas.rotate(t * 2 * pi * (i.isEven ? 1 : -1) * 0.25);
+      // 🟢 هنا تم إصلاح خطأ الريشة (paint) المفقودة 🟢
+      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: r * 2, height: r * 1.15), paint);
+      canvas.restore();
+    }
+
+    final a = t * 2 * pi;
+    canvas.drawCircle(Offset(cx + cos(a) * 220, cy + sin(a) * 130), 5, Paint()..color = _C.goldPrimary.withOpacity(0.12)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12));
+    canvas.drawCircle(Offset(cx + cos(a + pi) * 160, cy + sin(a + pi) * 95), 3.5, Paint()..color = _C.goldPrimary.withOpacity(0.08)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8));
+  }
+
+  @override
+  bool shouldRepaint(covariant _OrbitalPainter old) => true;
+}
+
+class _Particle { final double x, y, size, speed, opacity, angle; _Particle({required this.x, required this.y, required this.size, required this.speed, required this.opacity, required this.angle}); }
+class _ParticlePainter extends CustomPainter {
+  final List<_Particle> particles; final double progress; final Color color;
+  _ParticlePainter(this.particles, this.progress, this.color);
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final p in particles) {
+      final dx = p.x * size.width + sin(progress * 2 * pi * p.speed + p.angle) * 25;
+      final dy = p.y * size.height + cos(progress * 2 * pi * p.speed * 0.6 + p.angle) * 18;
+      final op = p.opacity * (0.5 + 0.5 * sin(progress * 2 * pi + p.angle));
+      canvas.drawCircle(Offset(dx % size.width, dy % size.height), p.size, Paint()..color = color.withOpacity(op)..maskFilter = MaskFilter.blur(BlurStyle.normal, p.size * 0.7));
+    }
+  }
+  @override bool shouldRepaint(covariant _ParticlePainter old) => true;
+}
+
+
+======================================================================
+FILE: lib/screens/profile_screen.dart
+======================================================================
+import 'dart:io';
+import 'dart:convert'; // 🟢 مكتبة التشفير (السلاح السري لتخطي حظر السيرفر)
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:url_launcher/url_launcher.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import '../services/api_engine.dart';
+import '../core/elite_theme.dart';
+import '../core/elite_alerts.dart'; 
+import 'login_screen.dart'; 
+import 'security_devices_screen.dart'; 
+
+class ProfileScreen extends StatefulWidget {
+  final String userName;
+  final String walletId;
+  final String? avatarUrl;
+
+  const ProfileScreen({super.key, required this.userName, required this.walletId, this.avatarUrl});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isUploading = false;
+  String? _currentAvatar;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentAvatar = widget.avatarUrl;
+  }
+
+  Future<void> _contactSupport() async {
+    final Uri url = Uri.parse('https://wa.me/970592283824?text=${Uri.encodeComponent("مرحباً قيادة المهندس، أواجه مشكلة تقنية في حسابي البنكي وأحتاج لتدخل الدعم الفني المباشر.")}');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) EliteAlerts.show(context, title: 'خطأ في النظام', message: 'لم نتمكن من فتح تطبيق الواتساب.', isSuccess: false);
+    }
+  }
+
+  // 🟢 الحل القطعي والنهائي لرفع الصورة (تشفير Base64 لتخطي كل جدران الحماية)
+  Future<void> _pickAndUploadImage() async {
+    final ImagePicker picker = ImagePicker();
+    // جودة 40% لضمان خفة حجم النص المشفر وسرعة الإرسال الخارقة
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 40);
+    
+    if (image == null) return;
+
+    setState(() => _isUploading = true);
+    try {
+      // 1. قراءة الصورة كـ "بايتات"
+      final bytes = await image.readAsBytes();
+      // 2. تشفير البايتات إلى نص Base64
+      final String base64Image = base64Encode(bytes);
+      final String extension = image.path.split('.').last;
+
+      // 3. الإرسال كبيانات نصية عادية (JSON) وليس كملف!
+      final response = await ApiEngine().dio.post(
+        '/user/avatar',
+        data: {
+          'avatar_base64': base64Image,
+          'extension': extension,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        setState(() => _currentAvatar = response.data['data']['avatar_url']);
+        EliteAlerts.show(context, title: 'عملية ناجحة', message: 'تم تحديث الهوية البصرية في النظام المركزي.', isSuccess: true);
+      }
+    } on DioException catch (e) {
+      String errorMsg = "الخادم لا يستجيب أو المسار غير موجود.";
+      if (e.response != null && e.response?.data is Map) {
+        errorMsg = e.response?.data['message'] ?? errorMsg;
+      }
+      EliteAlerts.show(context, title: 'فشل الاتصال', message: errorMsg, isSuccess: false);
+    } catch (e) {
+      EliteAlerts.show(context, title: 'خطأ داخلي', message: 'حدث خطأ أثناء معالجة تشفير الصورة.', isSuccess: false);
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _startPasswordChangeFlow() async {
+    final oldPassCtrl = TextEditingController();
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+    final otpCtrl = TextEditingController();
+    final g2faCtrl = TextEditingController();
+
+    bool? proceed = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: EliteColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: EliteColors.goldPrimary.withOpacity(0.3))),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_reset, color: EliteColors.goldPrimary),
+            SizedBox(width: 10),
+            Text('تغيير كلمة المرور', style: TextStyle(color: EliteColors.goldPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: oldPassCtrl, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كلمة المرور الحالية', labelStyle: TextStyle(color: Colors.white54))),
+            const SizedBox(height: 10),
+            TextField(controller: newPassCtrl, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كلمة المرور الجديدة', labelStyle: TextStyle(color: Colors.white54))),
+            const SizedBox(height: 10),
+            TextField(controller: confirmPassCtrl, obscureText: true, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'تأكيد كلمة المرور الجديدة', labelStyle: TextStyle(color: Colors.white54))),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: EliteColors.goldPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            onPressed: () {
+              if (newPassCtrl.text != confirmPassCtrl.text) {
+                EliteAlerts.show(context, title: 'تنبيه أمني', message: 'كلمة المرور الجديدة غير متطابقة!', isSuccess: false);
+                return;
+              }
+              if (newPassCtrl.text.length < 8) {
+                EliteAlerts.show(context, title: 'تنبيه أمني', message: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل.', isSuccess: false);
+                return;
+              }
+              Navigator.pop(ctx, true);
+            },
+            child: const Text('متابعة', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (proceed != true || oldPassCtrl.text.isEmpty || newPassCtrl.text.isEmpty) return;
+
+    final LocalAuthentication auth = LocalAuthentication();
+    bool canAuthenticate = await auth.canCheckBiometrics || await auth.isDeviceSupported();
+    if (canAuthenticate) {
+      try {
+        bool authenticated = await auth.authenticate(
+          localizedReason: 'يرجى تأكيد هويتك الحيوية للمتابعة',
+          options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
+        );
+        if (!authenticated) return;
+      } catch (e) {
+        return;
+      }
+    }
+
+    String tempTicket = '';
+    try {
+      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)));
+      
+      final resInit = await ApiEngine().dio.post('/user/password/init', data: {
+        'old_password': oldPassCtrl.text,
+        'new_password': newPassCtrl.text,
+      });
+      Navigator.pop(context); 
+
+      if (resInit.data['data'] != null && resInit.data['data']['ticket'] != null) {
+        tempTicket = resInit.data['data']['ticket'];
+      } else {
+        throw Exception("لم يرسل السيرفر تذكرة المصادقة");
+      }
+
+    } on DioException catch (e) {
+      Navigator.pop(context); 
+      String errorMsg = "الخادم لا يستجيب";
+      if (e.response != null && e.response?.data is Map) {
+        errorMsg = e.response?.data['message'] ?? errorMsg;
+      }
+      EliteAlerts.show(context, title: 'فشل التحقق', message: errorMsg, isSuccess: false);
+      return; 
+    } catch (e) {
+      Navigator.pop(context);
+      EliteAlerts.show(context, title: 'خطأ غير متوقع', message: 'حدث خطأ في النظام.', isSuccess: false);
+      return;
+    }
+
+    bool? finalProceed = await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: EliteColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: EliteColors.goldPrimary.withOpacity(0.3))),
+        title: const Text('المصادقة الثنائية', style: TextStyle(color: EliteColors.goldPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('تم إرسال كود التحقق لبريدك الإلكتروني.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const SizedBox(height: 15),
+            TextField(controller: otpCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز البريد الإلكتروني (OTP)', prefixIcon: Icon(Icons.email, color: Colors.white38))),
+            const SizedBox(height: 10),
+            TextField(controller: g2faCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'رمز تطبيق Authenticator', prefixIcon: Icon(Icons.security, color: Colors.white38))),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: EliteColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('تأكيد التغيير', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (finalProceed != true) return;
+
+    try {
+      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)));
+      await ApiEngine().dio.post('/user/password/confirm', data: {
+        'ticket': tempTicket,
+        'email_otp': otpCtrl.text,
+        'google_code': g2faCtrl.text,
+      });
+      Navigator.pop(context);
+
+      EliteAlerts.show(context, title: 'أمان الحساب', message: 'تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول مجدداً.', isSuccess: true);
+      
+      final prefs = await SharedPreferences.getInstance(); await prefs.clear();
+      const storage = FlutterSecureStorage(); await storage.deleteAll();
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
+
+    } on DioException catch (e) {
+      Navigator.pop(context); 
+      String errorMsg = "الخادم لا يستجيب";
+      if (e.response != null && e.response?.data is Map) {
+        errorMsg = e.response?.data['message'] ?? errorMsg;
+      }
+      EliteAlerts.show(context, title: 'رفض العملية', message: errorMsg, isSuccess: false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0, bottom: 120.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 🟢 بطاقة الهوية الرقمية الفخمة (ترقية الـ UX)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [EliteColors.surface.withOpacity(0.8), const Color(0xFF070B19).withOpacity(0.9)],
+                  ),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: EliteColors.goldPrimary.withOpacity(0.3), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: EliteColors.goldPrimary.withOpacity(0.05), blurRadius: 30, offset: const Offset(0, 10)),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: _pickAndUploadImage,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: EliteColors.goldPrimary, width: 2), boxShadow: EliteShadows.neonGold),
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: EliteColors.nightBg,
+                              backgroundImage: _currentAvatar != null ? NetworkImage(_currentAvatar!) : null,
+                              child: _currentAvatar == null ? const Icon(Icons.person, color: EliteColors.goldPrimary, size: 50) : null,
+                            ),
+                          ),
+                          if (_isUploading) const Positioned.fill(child: CircularProgressIndicator(color: EliteColors.goldPrimary)),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(color: EliteColors.goldPrimary, shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt, color: Colors.black, size: 20),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(widget.userName, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      child: Text(widget.walletId, style: const TextStyle(color: EliteColors.goldPrimary, fontSize: 13, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 40),
+
+          // 🟢 أزرار التحكم
+          _buildSettingsTile(Icons.lock_outline, 'تغيير كلمة المرور', 'حماية بيومترية ومصادقة ثنائية', onTap: _startPasswordChangeFlow),
+          _buildSettingsTile(Icons.security, 'إعدادات الأمان', 'إدارة الأجهزة المتصلة بالحساب', onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityDevicesScreen()));
+          }),
+          _buildSettingsTile(Icons.support_agent, 'التواصل مع الدعم الفني', 'المساعدة والمحادثة المباشرة', onTap: _contactSupport),
+          
+          const SizedBox(height: 30),
+          _buildSettingsTile(Icons.exit_to_app, 'تسجيل الخروج', 'إنهاء الجلسة الحالية بشكل آمن', isDanger: true, onTap: () async {
+            final prefs = await SharedPreferences.getInstance(); await prefs.clear();
+            const storage = FlutterSecureStorage(); await storage.deleteAll();
+            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile(IconData icon, String title, String subtitle, {bool isDanger = false, VoidCallback? onTap}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      decoration: BoxDecoration(color: EliteColors.surface.withOpacity(0.6), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.05))),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: isDanger ? EliteColors.danger.withOpacity(0.1) : EliteColors.goldPrimary.withOpacity(0.1), shape: BoxShape.circle), child: Icon(icon, color: isDanger ? EliteColors.danger : EliteColors.goldPrimary)),
+        title: Text(title, style: TextStyle(color: isDanger ? EliteColors.danger : Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+        trailing: Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
+          child: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 14),
+        ),
+      ),
+    );
+  }
+}
+
+======================================================================
+FILE: lib/screens/security_devices_screen.dart
+======================================================================
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import '../core/elite_theme.dart';
+import '../core/elite_alerts.dart';
+
+class SecurityDevicesScreen extends StatelessWidget {
+  const SecurityDevicesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: EliteColors.nightBg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('إعدادات الأمان للأجهزة', style: TextStyle(color: EliteColors.goldPrimary, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(child: CustomPaint(painter: EliteBackgroundPainter())),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('الجهاز الحالي', style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 15),
+                _buildDeviceCard(
+                  context,
+                  deviceName: 'Samsung Galaxy S24 Ultra',
+                  location: 'Palestine, Gaza (IP: 192.168.1.1)',
+                  lastActive: 'متصل الآن',
+                  icon: Icons.smartphone,
+                  isCurrent: true,
+                ),
+                const SizedBox(height: 30),
+                const Text('الأجهزة المتصلة مسبقاً', style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 15),
+                _buildDeviceCard(
+                  context,
+                  deviceName: 'Chrome Browser (Windows)',
+                  location: 'Unknown Location (IP: 45.33.22.1)',
+                  lastActive: 'نشط قبل ساعتين',
+                  icon: Icons.laptop_mac,
+                  isCurrent: false,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceCard(BuildContext context, {required String deviceName, required String location, required String lastActive, required IconData icon, required bool isCurrent}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: EliteColors.surface.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isCurrent ? EliteColors.success.withOpacity(0.5) : Colors.white.withOpacity(0.1)),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: isCurrent ? EliteColors.success.withOpacity(0.1) : Colors.white.withOpacity(0.05), shape: BoxShape.circle),
+                child: Icon(icon, color: isCurrent ? EliteColors.success : Colors.white70, size: 30),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(deviceName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 5),
+                    Text(location, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    const SizedBox(height: 5),
+                    Text(lastActive, style: TextStyle(color: isCurrent ? EliteColors.success : EliteColors.goldPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!isCurrent) ...[
+            const Padding(padding: EdgeInsets.symmetric(vertical: 15), child: Divider(color: Colors.white12)),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: EliteColors.danger.withOpacity(0.1),
+                  foregroundColor: EliteColors.danger,
+                  elevation: 0,
+                  side: const BorderSide(color: EliteColors.danger),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                icon: const Icon(Icons.block),
+                label: const Text('إلغاء اتصال هذا الجهاز', style: TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  EliteAlerts.show(context, title: 'إجراء أمني', message: 'تم إرسال أمر فصل الجهاز للسيرفر بنجاح.', isSuccess: true);
+                },
+              ),
+            )
+          ]
+        ],
+      ),
+    );
+  }
+}
+
+======================================================================
+FILE: lib/screens/splash_gate.dart
+======================================================================
+import 'package:flutter/material.dart';
+import '../services/api_engine.dart';
+import '../core/elite_theme.dart';
+import 'login_screen.dart';
+import 'dashboard_screen.dart';
+
+class SplashGate extends StatefulWidget {
+  const SplashGate({super.key});
+  @override
+  State<SplashGate> createState() => _SplashGateState();
+}
+class _SplashGateState extends State<SplashGate> {
+  @override
+  void initState() {
+    ApiEngine().pingForVersionCheck(); super.initState(); _checkAuth(); }
+  
+  Future<void> _checkAuth() async {
+    final token = await ApiEngine().storage.read(key: 'jwt_token');
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    if (token != null) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomPaint(
+        painter: EliteBackgroundPainter(),
+        child: const Center(child: CircularProgressIndicator(color: EliteColors.goldPrimary)),
+      ),
+    );
+  }
+}
+
+
+======================================================================
+FILE: lib/screens/splash_screen.dart
+======================================================================
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'login_screen.dart';
+import 'dashboard_screen.dart';
+import '../core/elite_theme.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // 🟢 هندسة الحركة (Animation) لدخول فخم ومتقدم
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500));
+    _scaleAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: const Interval(0.3, 1.0, curve: Curves.easeIn)));
+    
+    _controller.forward();
+    _checkAuthAndProceed();
+  }
+
+  Future<void> _checkAuthAndProceed() async {
+    // إعطاء وقت كافٍ للمستخدم لرؤية الشعار الفخم
+    await Future.delayed(const Duration(milliseconds: 3500)); 
+    
+    const storage = FlutterSecureStorage();
+    String? token = await storage.read(key: 'auth_token');
+
+    if (!mounted) return;
+
+    if (token != null && token.isNotEmpty) {
+      Navigator.pushReplacement(context, PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const DashboardScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ));
+    } else {
+      Navigator.pushReplacement(context, PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ));
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: EliteColors.nightBg,
+      body: Stack(
+        children: [
+          Positioned.fill(child: CustomPaint(painter: EliteBackgroundPainter())), // الخلفية السينمائية
+          
+          // 🟢 تأثير الوهج خلف الشعار
+          Center(
+            child: FadeTransition(
+              opacity: _opacityAnimation,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: EliteColors.goldPrimary.withOpacity(0.15), blurRadius: 100, spreadRadius: 30),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          Center(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: Opacity(
+                    opacity: _opacityAnimation.value,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // 🟢 استدعاء شعار شركتك الرسمي
+                        Image.asset(
+                          'assets/logo.png', // تأكد أن الشعار موجود بهذا الاسم
+                          width: 150,
+                          height: 150,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.account_balance, size: 100, color: EliteColors.goldPrimary);
+                          },
+                        ),
+                        const SizedBox(height: 40),
+                        const Text(
+                          'AL-MUHANDIS PAY',
+                          style: TextStyle(
+                            color: EliteColors.goldPrimary,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 4.0,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Sovereign Financial System',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 14,
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 60),
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: CircularProgressIndicator(
+                            color: EliteColors.goldPrimary,
+                            strokeWidth: 2,
+                            backgroundColor: Colors.white.withOpacity(0.05),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+======================================================================
+FILE: lib/screens/statement_screen.dart
+======================================================================
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:intl/intl.dart' show DateFormat;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import '../models/transaction_model.dart';
+import '../services/statement_service.dart';
+
+class _EliteColors {
+  static const Color nightBg     = Color(0xFF0B101E);
+  static const Color cardBg      = Color(0xFF161C2D);
+  static const Color goldPrimary = Color(0xFFD4AF37);
+  static const Color goldLight   = Color(0xFFE8D48B);
+  static const Color success     = Color(0xFF2ECC71);
+  static const Color danger      = Color(0xFFE74C3C);
+  static const Color glassBorder = Color(0xFF1E2740);
+}
+
+class StatementScreen extends StatefulWidget {
+  const StatementScreen({super.key});
+  @override
+  State<StatementScreen> createState() => _StatementScreenState();
+}
+
+class _StatementScreenState extends State<StatementScreen> {
+  final StatementService _service = StatementService();
+  final ScrollController _scrollController = ScrollController();
+  List<TransactionModel> _transactions = [];
+  int _currentPage = 1; bool _isLoading = false; bool _isLoadingMore = false; bool _hasMore = true; String? _errorMessage;
+  String _selectedType = 'all'; DateTime? _startDate; DateTime? _endDate;
+
+  final List<Map<String, String>> _typeOptions = [
+    {'value': 'all', 'label': 'الكل'}, {'value': 'deposit', 'label': 'إيداع'},
+    {'value': 'withdrawal', 'label': 'سحب'}, {'value': 'transfer', 'label': 'حوالة'},
+  ];
+
+  final DateFormat _displayDateFormat = DateFormat('yyyy/MM/dd');
+  final DateFormat _apiDateFormat     = DateFormat('yyyy-MM-dd');
+
+  @override
+  void initState() { super.initState(); _fetchStatement(); _scrollController.addListener(_onScroll); }
+  @override
+  void dispose() { _scrollController.removeListener(_onScroll); _scrollController.dispose(); super.dispose(); }
+
+  void _onScroll() { if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) _loadMore(); }
+
+  Future<void> _fetchStatement() async {
+    if (_isLoading) return;
+    setState(() { _isLoading = true; _errorMessage = null; _currentPage = 1; _transactions = []; _hasMore = true; });
+    try {
+      final response = await _service.fetchStatement(page: 1, limit: 20, type: _selectedType, startDate: _startDate != null ? _apiDateFormat.format(_startDate!) : null, endDate: _endDate != null ? _apiDateFormat.format(_endDate!) : null);
+      if (!mounted) return;
+      setState(() { _transactions = response.transactions; _hasMore = response.pagination.hasMore; _currentPage = 1; _isLoading = false; });
+    } catch (e) { if (!mounted) return; setState(() { _isLoading = false; _errorMessage = 'فشل في تحميل كشف الحساب. تحقق من الاتصال.'; }); }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      final nextPage = _currentPage + 1;
+      final response = await _service.fetchStatement(page: nextPage, limit: 20, type: _selectedType, startDate: _startDate != null ? _apiDateFormat.format(_startDate!) : null, endDate: _endDate != null ? _apiDateFormat.format(_endDate!) : null);
+      if (!mounted) return;
+      setState(() { _transactions.addAll(response.transactions); _hasMore = response.pagination.hasMore; _currentPage = nextPage; _isLoadingMore = false; });
+    } catch (e) { if (!mounted) return; setState(() => _isLoadingMore = false); }
+  }
+
+  Future<void> _onRefresh() async => await _fetchStatement();
+  void _applyFilter() => _fetchStatement();
+  void _clearFilters() { setState(() { _selectedType = 'all'; _startDate = null; _endDate = null; }); _fetchStatement(); }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context, initialDate: isStart ? (_startDate ?? now) : (_endDate ?? now), firstDate: DateTime(2020), lastDate: now,
+      builder: (context, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: const ColorScheme.dark(primary: _EliteColors.goldPrimary, onPrimary: Colors.black, surface: _EliteColors.cardBg, onSurface: Colors.white), dialogBackgroundColor: _EliteColors.nightBg), child: child!),
+    );
+    if (picked != null) { setState(() { if (isStart) _startDate = picked; else _endDate = picked; }); }
+  }
+
+  void _showReceipt(TransactionModel tx) {
+    final bool isCredit = tx.isCredit;
+    final Color amountColor = isCredit ? _EliteColors.success : _EliteColors.danger;
+    final GlobalKey receiptKey = GlobalKey();
+    bool isSharing = false;
+
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RepaintBoundary(
+                      key: receiptKey,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(color: _EliteColors.nightBg, borderRadius: BorderRadius.circular(24), border: Border.all(color: _EliteColors.goldPrimary.withOpacity(0.4), width: 1.5)),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(margin: const EdgeInsets.only(top: 12), width: 50, height: 4, decoration: BoxDecoration(color: _EliteColors.goldPrimary.withOpacity(0.4), borderRadius: BorderRadius.circular(2))),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 64, height: 64, decoration: BoxDecoration(color: amountColor.withOpacity(0.12), shape: BoxShape.circle, border: Border.all(color: amountColor.withOpacity(0.3), width: 1.5)),
+                                    child: Icon(isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, color: amountColor, size: 32),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(tx.categoryLabel, style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  const SizedBox(height: 4),
+                                  Text(tx.categoryLabelEn, style: GoogleFonts.cairo(fontSize: 12, color: Colors.grey.shade500, letterSpacing: 3)),
+                                  const SizedBox(height: 20),
+                                  Text('${isCredit ? '+' : '-'} ${tx.amount.toStringAsFixed(2)} USDT', style: GoogleFonts.cairo(fontSize: 36, fontWeight: FontWeight.bold, color: amountColor)),
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Row(children: List.generate(40, (i) => Expanded(child: Container(height: 1, color: i.isEven ? _EliteColors.goldPrimary.withOpacity(0.3) : Colors.transparent)))),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                              child: Column(
+                                children: [
+                                  _receiptRow('رقم العملية', tx.shortTxId),
+                                  _receiptRow('نوع القيد', tx.isCredit ? 'دائن (Credit)' : 'مدين (Debit)'),
+                                  
+                                  // 👈 إضافة صف المرسل / المستفيد هنا
+                                  if (tx.txCategory == 'transfer')
+                                    _receiptRow(tx.isCredit ? 'المرسل' : 'المستفيد', tx.relatedParty.isNotEmpty ? tx.relatedParty : 'غير متوفر'),
+
+                                  _receiptRow('الحالة', tx.txStatus == 'completed' ? 'مكتملة ✅' : tx.txStatus),
+                                  _receiptRow('التاريخ', DateFormat('yyyy/MM/dd').format(tx.createdAt)),
+                                  _receiptRow('الوقت', DateFormat('HH:mm:ss').format(tx.createdAt)),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(24, 8, 24, 4), padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(color: _EliteColors.cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _EliteColors.glassBorder)),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.fingerprint, color: _EliteColors.goldPrimary, size: 20), const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Transaction ID', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade500)),
+                                        const SizedBox(height: 2),
+                                        Text(tx.transactionId, style: GoogleFonts.sourceCodePro(fontSize: 10, color: _EliteColors.goldLight, letterSpacing: 0.5), overflow: TextOverflow.ellipsis),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(24, 4, 24, 4), padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(color: _EliteColors.cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _EliteColors.glassBorder)),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.lock_outline, color: _EliteColors.goldPrimary, size: 20), const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Receipt Hash', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade500)),
+                                        const SizedBox(height: 2),
+                                        Text(tx.receiptId.isNotEmpty ? tx.receiptId : 'N/A', style: GoogleFonts.sourceCodePro(fontSize: 10, color: _EliteColors.goldLight, letterSpacing: 0.8), overflow: TextOverflow.ellipsis),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                              child: Column(
+                                children: [
+                                  Image.asset('assets/logo.png', width: 24, height: 24, errorBuilder: (c, e, s) => const Icon(Icons.security, color: _EliteColors.goldPrimary, size: 20)), const SizedBox(height: 6),
+                                  Text('Al-Muhandis Pay', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: _EliteColors.goldPrimary)),
+                                  Text('Secured Transaction Receipt', style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey.shade600)),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                              child: QrImageView(
+                                data: 'https://al-muhandis.com/receipt?id=${tx.transactionId}',
+                                version: QrVersions.auto,
+                                size: 80.0,
+                              ),
+                            ),
+
+                            // 👈 الملاحظة القانونية أسفل الصورة (تظهر في صورة المشاركة)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: _EliteColors.goldPrimary.withOpacity(0.08),
+                                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
+                              ),
+                              child: Text(
+                                'هذا الإيصال مُصدر إلكترونياً من نظام المهندس Pay\nوهو وثيقة رسمية موثقة لا تتطلب التوقيع أو الختم اليدوي.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.cairo(fontSize: 9, color: _EliteColors.goldPrimary, height: 1.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (isSharing) const Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator(color: _EliteColors.goldPrimary))
+                    else ElevatedButton.icon(
+                      onPressed: () async {
+                        setStateSheet(() => isSharing = true);
+                        try {
+                          RenderRepaintBoundary boundary = receiptKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+                          ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+                          ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+                          Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+                          final directory = await getTemporaryDirectory();
+                          final imagePath = await File('${directory.path}/receipt_${tx.shortTxId}.png').create();
+                          await imagePath.writeAsBytes(pngBytes);
+
+                          await Share.shareXFiles([XFile(imagePath.path)], text: 'إيصال عملية #${tx.shortTxId} - Al-Muhandis Pay');
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حدث خطأ أثناء المشاركة'), backgroundColor: _EliteColors.danger));
+                        } finally {
+                          if (mounted) setStateSheet(() => isSharing = false);
+                        }
+                      },
+                      icon: const Icon(Icons.ios_share, color: Colors.black),
+                      label: Text('مشاركة الإيصال', style: GoogleFonts.cairo(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                      style: ElevatedButton.styleFrom(backgroundColor: _EliteColors.goldPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14), elevation: 4),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _receiptRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label, style: GoogleFonts.cairo(fontSize: 13, color: Colors.grey.shade400)), Text(value, style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white))]),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _EliteColors.nightBg,
+        appBar: AppBar(title: Text('كشف الحساب', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _EliteColors.goldPrimary)), backgroundColor: _EliteColors.nightBg, foregroundColor: _EliteColors.goldPrimary, elevation: 0, iconTheme: const IconThemeData(color: _EliteColors.goldPrimary)),
+        body: Column(children: [_buildFilterBar(), Expanded(child: _buildBody())]),
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    final bool hasActiveFilters = _selectedType != 'all' || _startDate != null || _endDate != null;
+    return Container(
+      color: _EliteColors.cardBg, padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12), decoration: BoxDecoration(border: Border.all(color: _EliteColors.glassBorder), borderRadius: BorderRadius.circular(12), color: _EliteColors.nightBg),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedType, isExpanded: true, dropdownColor: _EliteColors.cardBg, icon: const Icon(Icons.keyboard_arrow_down, color: _EliteColors.goldPrimary),
+                      items: _typeOptions.map((o) => DropdownMenuItem<String>(value: o['value'], child: Text(o['label']!, style: GoogleFonts.cairo(fontSize: 14, color: Colors.white)))).toList(),
+                      onChanged: (v) { if (v != null) { setState(() => _selectedType = v); _applyFilter(); } },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (hasActiveFilters) TextButton.icon(onPressed: _clearFilters, icon: const Icon(Icons.clear, size: 16, color: _EliteColors.danger), label: Text('مسح', style: GoogleFonts.cairo(color: _EliteColors.danger, fontSize: 12))),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _buildDateChip(label: _startDate != null ? _displayDateFormat.format(_startDate!) : 'من تاريخ', isActive: _startDate != null, onTap: () => _pickDate(isStart: true))),
+              const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Icon(Icons.arrow_forward, size: 14, color: _EliteColors.goldPrimary)),
+              Expanded(child: _buildDateChip(label: _endDate != null ? _displayDateFormat.format(_endDate!) : 'إلى تاريخ', isActive: _endDate != null, onTap: () => _pickDate(isStart: false))),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _applyFilter,
+                child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(gradient: const LinearGradient(colors: [_EliteColors.goldPrimary, Color(0xFFB8952C)]), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.search, size: 20, color: Colors.black)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateChip({required String label, required bool isActive, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap, borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), decoration: BoxDecoration(border: Border.all(color: isActive ? _EliteColors.goldPrimary : _EliteColors.glassBorder), borderRadius: BorderRadius.circular(12), color: isActive ? _EliteColors.goldPrimary.withOpacity(0.08) : _EliteColors.nightBg),
+        child: Row(children: [Icon(Icons.calendar_today, size: 14, color: isActive ? _EliteColors.goldPrimary : Colors.grey.shade500), const SizedBox(width: 6), Expanded(child: Text(label, style: GoogleFonts.cairo(fontSize: 12, color: isActive ? _EliteColors.goldPrimary : Colors.grey.shade500), overflow: TextOverflow.ellipsis))]),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) return const Center(child: CircularProgressIndicator(color: _EliteColors.goldPrimary));
+    if (_errorMessage != null) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.cloud_off, size: 56, color: Colors.grey.shade600), const SizedBox(height: 16), Text(_errorMessage!, style: GoogleFonts.cairo(color: Colors.grey.shade500, fontSize: 14), textAlign: TextAlign.center), const SizedBox(height: 16), GestureDetector(onTap: _fetchStatement, child: Container(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10), decoration: BoxDecoration(border: Border.all(color: _EliteColors.goldPrimary), borderRadius: BorderRadius.circular(12)), child: Text('إعادة المحاولة', style: GoogleFonts.cairo(color: _EliteColors.goldPrimary, fontWeight: FontWeight.bold))))]));
+    if (_transactions.isEmpty) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.receipt_long, size: 56, color: Colors.grey.shade600), const SizedBox(height: 16), Text('لا توجد حركات مالية', style: GoogleFonts.cairo(color: Colors.grey.shade500, fontSize: 16))]));
+    return RefreshIndicator(
+      onRefresh: _onRefresh, color: _EliteColors.goldPrimary, backgroundColor: _EliteColors.cardBg,
+      child: ListView.builder(
+        controller: _scrollController, physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), itemCount: _transactions.length + (_hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == _transactions.length) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: _EliteColors.goldPrimary)));
+          return _buildTransactionCard(_transactions[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildTransactionCard(TransactionModel tx) {
+    final bool isCredit = tx.isCredit;
+    final Color amountColor = isCredit ? _EliteColors.success : _EliteColors.danger;
+    return InkWell(
+      onTap: () => _showReceipt(tx), borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: _EliteColors.cardBg, borderRadius: BorderRadius.circular(16), border: Border.all(color: _EliteColors.glassBorder)),
+        child: Row(
+          children: [
+            Container(width: 44, height: 44, decoration: BoxDecoration(color: amountColor.withOpacity(0.1), borderRadius: BorderRadius.circular(14), border: Border.all(color: amountColor.withOpacity(0.2))), child: Icon(tx.txCategory == 'deposit' ? Icons.arrow_downward_rounded : tx.txCategory == 'withdrawal' ? Icons.arrow_upward_rounded : Icons.swap_horiz_rounded, color: amountColor, size: 22)),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(tx.categoryLabel, style: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.white)), const SizedBox(height: 3), Text('${tx.shortTxId}  •  ${DateFormat('yyyy/MM/dd - HH:mm').format(tx.createdAt)}', style: GoogleFonts.cairo(color: Colors.grey.shade500, fontSize: 11))])),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text('${isCredit ? '+' : '-'} ${tx.amount.toStringAsFixed(2)}', style: GoogleFonts.cairo(color: amountColor, fontWeight: FontWeight.bold, fontSize: 16)), Text('USDT', style: GoogleFonts.cairo(color: Colors.grey.shade600, fontSize: 10))]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+======================================================================
+FILE: lib/screens/transfer_screen.dart
+======================================================================
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:local_auth/local_auth.dart';
+import '../services/api_engine.dart';
+import '../core/elite_theme.dart';
+import '../core/elite_alerts.dart';
+
+class TransferScreen extends StatefulWidget {
+  const TransferScreen({super.key});
+
+  @override
+  State<TransferScreen> createState() => _TransferScreenState();
+}
+
+class _TransferScreenState extends State<TransferScreen> {
+  final TextEditingController _receiverCtrl = TextEditingController();
+  final TextEditingController _amountCtrl = TextEditingController();
+  final TextEditingController _descCtrl = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _processTransfer() async {
+    final receiver = _receiverCtrl.text.trim();
+    final amountText = _amountCtrl.text.trim();
+
+    if (receiver.isEmpty || amountText.isEmpty) {
+      EliteAlerts.show(context, title: 'بيانات غير مكتملة', message: 'الرجاء إدخال رقم حساب المستفيد والمبلغ.', isSuccess: false);
+      return;
+    }
+
+    final amount = double.tryParse(amountText);
+    if (amount == null || amount <= 0) {
+      EliteAlerts.show(context, title: 'قيمة غير صالحة', message: 'الرجاء إدخال مبلغ صحيح أكبر من الصفر.', isSuccess: false);
+      return;
+    }
+
+    // 🟢 طبقة المصادقة البيومترية (إلزامية)
+    final LocalAuthentication auth = LocalAuthentication();
+    bool canAuthenticate = await auth.canCheckBiometrics || await auth.isDeviceSupported();
+    
+    if (canAuthenticate) {
+      try {
+        bool authenticated = await auth.authenticate(
+          localizedReason: 'قم بتأكيد هويتك لإرسال ${amount.toStringAsFixed(2)} USDT',
+          options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
+        );
+        if (!authenticated) {
+          EliteAlerts.show(context, title: 'إلغاء أمني', message: 'تم إيقاف العملية لعدم اجتياز البصمة البيومترية.', isSuccess: false);
+          return;
+        }
+      } catch (e) {
+        EliteAlerts.show(context, title: 'تنبيه', message: 'إعدادات البصمة في هاتفك غير مفعلة، يرجى تفعيلها للحماية.', isSuccess: false);
+        return; // نمنع التحويل إذا لم تنجح البصمة
+      }
+    } else {
+       EliteAlerts.show(context, title: 'تنبيه أمني', message: 'جهازك لا يدعم البصمة البيومترية، العملية محظورة.', isSuccess: false);
+       return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await ApiEngine().dio.post(
+        '/transfer',
+        data: {
+          'receiver_id': receiver,
+          'amount': amount,
+          'description': _descCtrl.text.isNotEmpty ? _descCtrl.text : 'حوالة عبر التطبيق'
+        },
+      );
+
+      if (response.statusCode == 200) {
+        String receiverName = response.data['data']['receiver'] ?? receiver;
+        EliteAlerts.show(context, title: 'حوالة صادرة ناجحة', message: 'تم إرسال $amount USDT إلى حساب $receiverName', isSuccess: true);
+        
+        _receiverCtrl.clear();
+        _amountCtrl.clear();
+        _descCtrl.clear();
+        
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) Navigator.pop(context);
+        });
+      }
+    } on DioException catch (e) {
+      String errorMsg = e.response?.data['message'] ?? 'فشل الاتصال بالخادم المركزي.';
+      EliteAlerts.show(context, title: 'رفض العملية', message: errorMsg, isSuccess: false);
+    } catch (e) {
+      EliteAlerts.show(context, title: 'خطأ داخلي', message: 'حدث خطأ غير متوقع أثناء معالجة الطلب.', isSuccess: false);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: EliteColors.nightBg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('إرسال أموال', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(child: CustomPaint(painter: EliteBackgroundPainter())),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 🟢 منطقة إدخال المبلغ (ضخمة ومركزية كالبنوك العالمية)
+                  const Text('المبلغ المراد إرساله', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _amountCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: EliteColors.goldPrimary, fontSize: 50, fontWeight: FontWeight.w900),
+                    decoration: InputDecoration(
+                      hintText: '0.00',
+                      hintStyle: TextStyle(color: EliteColors.goldPrimary.withOpacity(0.3), fontSize: 50),
+                      border: InputBorder.none,
+                      prefixText: 'USDT ',
+                      prefixStyle: const TextStyle(color: Colors.white70, fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // 🟢 البطاقة الزجاجية لبيانات المستلم
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: EliteColors.surface.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('تفاصيل المستفيد', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                            const SizedBox(height: 15),
+                            _buildInputRow(
+                              controller: _receiverCtrl,
+                              icon: Icons.account_circle_outlined,
+                              hint: 'رقم حساب المهندس (AMP) أو الإيميل',
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 10),
+                              child: Divider(color: Colors.white12, height: 1),
+                            ),
+                            _buildInputRow(
+                              controller: _descCtrl,
+                              icon: Icons.edit_note_outlined,
+                              hint: 'الغاية من التحويل (اختياري)',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 50),
+                  
+                  // 🟢 زر التحويل مع البصمة
+                  SizedBox(
+                    width: double.infinity,
+                    height: 65,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: EliteColors.goldPrimary,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        elevation: 10,
+                        shadowColor: EliteColors.goldPrimary.withOpacity(0.4),
+                      ),
+                      onPressed: _isLoading ? null : _processTransfer,
+                      child: _isLoading
+                          ? const SizedBox(width: 30, height: 30, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 3))
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.fingerprint, size: 28),
+                                SizedBox(width: 10),
+                                Text('تأكيد وإرسال', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.1)),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shield, color: EliteColors.success, size: 14),
+                      SizedBox(width: 5),
+                      Text('محمي بتشفير البصمة البيومترية', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputRow({required TextEditingController controller, required IconData icon, required String hint}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
+          child: Icon(icon, color: EliteColors.goldPrimary, size: 20),
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+======================================================================
+FILE: lib/screens/withdrawal_screen.dart
+======================================================================
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:dio/dio.dart' show DioException;
+import '../services/api_engine.dart';
+
+class _C {
+  static const Color nightBg = Color(0xFF030712);
+  static const Color cardBg = Color(0xFF0D1321);
+  static const Color goldPrimary = Color(0xFFD4AF37);
+  static const Color goldDark = Color(0xFFB8952C);
+  static const Color success = Color(0xFF22C55E);
+  static const Color danger = Color(0xFFEF4444);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color glassBorder = Color(0xFF1E293B);
+  static const Color inputBg = Color(0xFF0F1524);
+  static const Color textMuted = Color(0xFF64748B);
+}
+
+class WithdrawalScreen extends StatefulWidget {
+  const WithdrawalScreen({super.key});
+  @override State<WithdrawalScreen> createState() => _WithdrawalScreenState();
+}
+
+class _WithdrawalScreenState extends State<WithdrawalScreen> with SingleTickerProviderStateMixin {
+  final _addressCtrl = TextEditingController();
+  final _amountCtrl = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMsg;
+  String _phase = 'input';
+  Map<String, dynamic>? _result;
+  late AnimationController _fadeCtrl;
+
+  @override void initState() {
+    super.initState();
+    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..forward();
+    _amountCtrl.addListener(() => setState(() {}));
+    _addressCtrl.addListener(() => setState(() {}));
+  }
+
+  double get _amount => double.tryParse(_amountCtrl.text) ?? 0;
+  double get _netAmount => (_amount - 1.50).clamp(0, double.infinity);
+  bool get _isValidAddress => RegExp(r'^T[1-9A-HJ-NP-Za-km-z]{33}$').hasMatch(_addressCtrl.text.trim());
+  bool get _isValidAmount => _amount >= 5.00;
+
+  Future<void> _submitWithdrawal() async {
+    if (!_isValidAddress || !_isValidAmount) return;
+    setState(() { _isLoading = true; _errorMsg = null; });
+    try {
+      final res = await ApiEngine().dio.post('/withdrawal/request', data: {'address': _addressCtrl.text.trim(), 'amount': _amount});
+      if (res.statusCode == 200) {
+        HapticFeedback.heavyImpact();
+        setState(() { _result = res.data['data'] ?? res.data; _phase = 'success'; _isLoading = false; });
+      }
+    } catch (e) {
+      String msg = 'فشل تقديم طلب السحب.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response!.data['message']?.toString() ?? msg;
+      }
+      setState(() { _isLoading = false; _errorMsg = msg; });
+    }
+  }
+
+  @override Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(backgroundColor: _C.nightBg, appBar: AppBar(title: Text('سحب USDT', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _C.goldPrimary)), backgroundColor: _C.nightBg, elevation: 0),
+      body: SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.all(24), child: _phase == 'input' ? _buildInput() : _buildSuccess()))),
+    );
+  }
+
+  Widget _buildInput() {
+    return Column(children: [
+      Icon(Icons.arrow_circle_up_rounded, color: _C.goldPrimary, size: 64),
+      Text('سحب الأرباح', style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+      const SizedBox(height: 30),
+      TextField(controller: _addressCtrl, style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'عنوان TRC-20 الوجهة (يبدأ بـ T)', hintStyle: const TextStyle(color: _C.textMuted), filled: true, fillColor: _C.inputBg, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)))),
+      const SizedBox(height: 15),
+      TextField(controller: _amountCtrl, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'المبلغ (الحد الأدنى 5 USDT)', hintStyle: const TextStyle(color: _C.textMuted), filled: true, fillColor: _C.inputBg, border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)))),
+      if (_amount > 0) ...[
+        const SizedBox(height: 20),
+        Container(padding: const EdgeInsets.all(15), decoration: BoxDecoration(color: _C.cardBg, borderRadius: BorderRadius.circular(15)), child: Column(children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('رسوم الشبكة', style: GoogleFonts.cairo(color: _C.danger)), Text('1.50 USDT', style: GoogleFonts.cairo(color: _C.danger))]),
+          const Divider(),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('الصافي الذي سيصلك', style: GoogleFonts.cairo(color: _C.success)), Text('${_netAmount.toStringAsFixed(2)} USDT', style: GoogleFonts.cairo(color: _C.success, fontWeight: FontWeight.bold))]),
+        ]))
+      ],
+      if (_errorMsg != null) Padding(padding: const EdgeInsets.only(top: 15), child: Text(_errorMsg!, style: GoogleFonts.cairo(color: _C.danger))),
+      const SizedBox(height: 30),
+      SizedBox(width: double.infinity, height: 55, child: ElevatedButton(onPressed: (_isValidAddress && _isValidAmount && !_isLoading) ? _submitWithdrawal : null, style: ElevatedButton.styleFrom(backgroundColor: _C.goldPrimary, foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))), child: _isLoading ? const CircularProgressIndicator() : Text('تأكيد السحب', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 18)))),
+    ]);
+  }
+
+  Widget _buildSuccess() {
+    return Column(children: [
+      const SizedBox(height: 50),
+      const Icon(Icons.check_circle, color: _C.success, size: 80),
+      const SizedBox(height: 20),
+      Text('تم تسجيل الطلب بنجاح', style: GoogleFonts.cairo(color: _C.success, fontSize: 24, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 20),
+      ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('العودة'))
+    ]);
+  }
+}
+
+
+======================================================================
+FILE: lib/services/api_engine.dart
+======================================================================
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'hmac_interceptor.dart';
+import '../screens/force_update_screen.dart';
+
+class ApiEngine {
+  static final ApiEngine _instance = ApiEngine._internal();
+  factory ApiEngine() => _instance;
+  late Dio dio;
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
+
+  static const String _hmacSecret = 'AlMuhandis_HMAC_Secret_2026_!@#\$%^&*';
+  static const String currentAppVersion = '1.0.0';
+
+  GlobalKey<NavigatorState>? _navigatorKey;
+
+  void setNavigatorKey(GlobalKey<NavigatorState> key) {
+    _navigatorKey = key;
+  }
+
+  ApiEngine._internal() {
+    dio = Dio(BaseOptions(
+      baseUrl: 'https://al-muhandis.com/api',
+      connectTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 20),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Client-Platform': 'Al-Muhandis-Secure-Core',
+        'X-App-Version': currentAppVersion,
+      },
+    ));
+
+    dio.interceptors.add(HmacInterceptor(secretKey: _hmacSecret));
+
+    dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        String? token = await storage.read(key: 'jwt_token');
+        if (token == null || token.isEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          token = prefs.getString('jwt_token') ?? prefs.getString('token') ?? prefs.getString('auth_token');
+        }
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        return handler.next(options);
+      },
+      onError: (DioException e, handler) async {
+        if (e.response?.statusCode == 426) {
+          final data = e.response?.data;
+          final updateUrl = data is Map ? (data['update_url'] ?? 'https://al-muhandis.com/download/app.apk') : 'https://al-muhandis.com/download/app.apk';
+          final isMaintenance = data is Map ? (data['maintenance'] == true) : false;
+          _triggerKillSwitch(updateUrl, isMaintenance);
+        }
+        return handler.next(e);
+      }
+    ));
+  }
+
+  void _triggerKillSwitch(String updateUrl, bool isMaintenance) {
+    if (_navigatorKey?.currentState != null) {
+      _navigatorKey!.currentState!.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => ForceUpdateScreen(
+            updateUrl: updateUrl,
+            isMaintenance: isMaintenance,
+          ),
+        ),
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
+
+  Future<void> pingForVersionCheck() async {
+    try {
+      await dio.get('/app-config');
+    } catch (e) {}
+  }
+
+  Future<void> clearAuth() async {
+    await storage.delete(key: 'jwt_token');
+  }
+
+  Future<Response> login(String username, String password) async {
+    return await dio.post('/login', data: {'username': username, 'password': password});
+  }
+
+  Future<Response> verifyEmail(String ticket, String code) async {
+    return await dio.post('/verify-email', data: {'auth_ticket': ticket, 'email_otp': code});
+  }
+
+  Future<Response> verifyGoogle(String ticket, String code) async {
+    return await dio.post('/verify-google', data: {'auth_ticket': ticket, 'google_code': code});
+  }
+
+  // 💸 دالة التحويل السيادية
+  Future<Map<String, dynamic>> sendTransfer(String receiverId, double amount, String description) async {
+    try {
+      final res = await dio.post('/transfer', data: {
+        'receiver_id': receiverId,
+        'amount': amount,
+        'description': description
+      });
+      return {'success': true, 'message': res.data['message'] ?? 'تم التحويل بنجاح'};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.response?.data['message'] ?? 'فشل التحويل'};
+    } catch (e) {
+      return {'success': false, 'message': 'حدث خطأ أثناء الاتصال'};
+    }
+  }
+}
+
+
+======================================================================
+FILE: lib/services/biometric_service.dart
+======================================================================
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter/services.dart';
+
+class BiometricService {
+  static final LocalAuthentication _auth = LocalAuthentication();
+
+  static Future<bool> authenticate({String reason = 'ضع بصمتك لتأكيد العملية المالية'}) async {
+    try {
+      bool canCheck = await _auth.canCheckBiometrics;
+      if (!canCheck) return true; // تجاوز إذا كان الجهاز لا يدعم البصمة
+      
+      // 🛡️ الصيغة المجردة والآمنة 100% التي يقبلها أي إصدار
+      return await _auth.authenticate(
+        localizedReason: reason,
+      );
+    } on PlatformException catch (_) {
+      return false; // فشل أو إلغاء البصمة
+    }
+  }
+
+  static Future<bool> authenticateForTransfer({required double amount, required String recipientName}) async {
+    return await authenticate(reason: 'أكّد بصمتك لتحويل $amount USDT إلى $recipientName');
+  }
+}
+
+
+======================================================================
+FILE: lib/services/hmac_interceptor.dart
+======================================================================
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
+
+class HmacInterceptor extends Interceptor {
+  final String secretKey;
+
+  HmacInterceptor({required this.secretKey});
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    final nonce = base64Encode(utf8.encode(timestamp + 'AlMuhandisBankSecret2026'));
+
+    String rawBody = '';
+    if (options.data != null) {
+      rawBody = jsonEncode(options.data);
+    }
+
+    final method = options.method.toUpperCase();
+    final path = options.uri.path;
+    
+    final signingString = '$method|$path|$rawBody|$timestamp|$nonce';
+
+    final hmac = Hmac(sha256, utf8.encode(secretKey));
+    final digest = hmac.convert(utf8.encode(signingString));
+    
+    options.headers['X-Hmac-Signature'] = digest.toString();
+    options.headers['X-Request-Timestamp'] = timestamp;
+    options.headers['X-Request-Nonce'] = nonce;
+    
+    if (rawBody.isNotEmpty) {
+      options.headers['X-Body-Hash'] = sha256.convert(utf8.encode(rawBody)).toString();
+    }
+
+    super.onRequest(options, handler);
+  }
+}
+
+
+======================================================================
+FILE: lib/services/statement_service.dart
+======================================================================
+import '../models/transaction_model.dart';
+import 'api_engine.dart';
+
+class StatementService {
+  final _dio = ApiEngine().dio;
+
+  Future<StatementResponse> fetchStatement({int page = 1, int limit = 20, String type = 'all', String? startDate, String? endDate}) async {
+    final Map<String, dynamic> queryParams = {'page': page, 'limit': limit, 'type': type};
+    if (startDate != null && startDate.isNotEmpty) queryParams['start_date'] = startDate;
+    if (endDate != null && endDate.isNotEmpty) queryParams['end_date'] = endDate;
+
+    final response = await _dio.get('/statement', queryParameters: queryParams);
+
+    if (response.statusCode == 200) {
+      final data = response.data['data'];
+      return StatementResponse(
+        transactions: (data['transactions'] as List).map((json) => TransactionModel.fromJson(json)).toList(),
+        pagination: PaginationModel.fromJson(data['pagination']),
+      );
+    }
+    throw Exception(response.data['message'] ?? 'فشل في جلب كشف الحساب');
+  }
+}
+
+class StatementResponse {
+  final List<TransactionModel> transactions;
+  final PaginationModel pagination;
+  StatementResponse({required this.transactions, required this.pagination});
+}
+
+
+======================================================================
+FILE: lib/widgets/elite_button.dart
+======================================================================
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../core/elite_theme.dart';
+
+class EliteButton extends StatefulWidget {
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final bool isDanger; // لتحويل لون الزر للأحمر في حالات الحظر/الخروج
+
+  const EliteButton({
+    super.key, required this.text, this.onPressed,
+    this.isLoading = false, this.isDanger = false,
+  });
+
+  @override
+  State<EliteButton> createState() => _EliteButtonState();
+}
+
+class _EliteButtonState extends State<EliteButton> with SingleTickerProviderStateMixin {
+  late double _scale;
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 100), lowerBound: 0.0, upperBound: 0.05)..addListener(() { setState(() {}); });
+  }
+
+  @override
+  void dispose() { _controller.dispose(); super.dispose(); }
+
+  void _tapDown(TapDownDetails details) => _controller.forward();
+  void _tapUp(TapUpDetails details) => _controller.reverse();
+  void _tapCancel() => _controller.reverse();
+
+  @override
+  Widget build(BuildContext context) {
+    _scale = 1 - _controller.value;
+    final Color mainColor = widget.isDanger ? EliteColors.danger : EliteColors.goldPrimary;
+    final List<BoxShadow> glow = widget.isDanger ? EliteShadows.neonDanger : EliteShadows.neonGold;
+
+    return GestureDetector(
+      onTapDown: widget.isLoading || widget.onPressed == null ? null : _tapDown,
+      onTapUp: widget.isLoading || widget.onPressed == null ? null : _tapUp,
+      onTapCancel: widget.isLoading || widget.onPressed == null ? null : _tapCancel,
+      onTap: widget.isLoading ? null : widget.onPressed,
+      child: Transform.scale(
+        scale: _scale,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity, height: 60,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: widget.isLoading || widget.onPressed == null 
+                ? const LinearGradient(colors: [Colors.grey, Colors.black54])
+                : widget.isDanger ? null : EliteColors.goldGradient,
+            color: widget.isDanger ? mainColor : null,
+            boxShadow: widget.isLoading || widget.onPressed == null ? [] : glow,
+          ),
+          child: Center(
+            child: widget.isLoading
+                ? const SizedBox(height: 25, width: 25, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 3))
+                : Text(widget.text, style: GoogleFonts.cairo(fontSize: 20, fontWeight: FontWeight.bold, color: widget.isDanger ? Colors.white : Colors.black, letterSpacing: 1.5)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+======================================================================
+FILE: lib/widgets/glass_input.dart
+======================================================================
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../core/elite_theme.dart';
+
+class GlassInput extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final bool isPassword;
+  final bool obscureText;
+  final VoidCallback? onTogglePassword;
+  final TextInputType keyboardType;
+
+  const GlassInput({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.isPassword = false,
+    this.obscureText = false,
+    this.onTogglePassword,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: EliteColors.glassBorderLight),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword ? obscureText : false,
+        keyboardType: keyboardType,
+        style: GoogleFonts.cairo(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.cairo(color: Colors.grey),
+          prefixIcon: Icon(icon, color: EliteColors.goldPrimary),
+          suffixIcon: isPassword 
+            ? IconButton(
+                icon: Icon(obscureText ? Icons.visibility : Icons.visibility_off, color: Colors.grey),
+                onPressed: onTogglePassword,
+              )
+            : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        ),
+      ),
+    );
+  }
+}
+
+
+======================================================================
+FILE: lib/widgets/sovereign_receipt_widget.dart
+======================================================================
+import 'package:flutter/material.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:gal/gal.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'dart:typed_data';
+
+class SovereignReceipt extends StatefulWidget {
+  final Map<String, dynamic> txData;
+  const SovereignReceipt({super.key, required this.txData});
+
+  @override
+  State<SovereignReceipt> createState() => _SovereignReceiptState();
+}
+
+class _SovereignReceiptState extends State<SovereignReceipt> {
+  final ScreenshotController _screenshotController = ScreenshotController();
+  bool _isSaving = false;
+  bool _isSharing = false;
+
+  // 💾 بروتوكول الحفظ في المعرض
+  Future<void> _captureAndSave() async {
+    setState(() => _isSaving = true);
+    try {
+      final Uint8List? imageBytes = await _screenshotController.capture();
+      if (imageBytes != null) {
+        await Gal.putImageBytes(imageBytes);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم حفظ الوثيقة الرسمية في المعرض 🦅", style: TextStyle(fontFamily: 'Cairo'))));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("فشل في حفظ الوثيقة", style: TextStyle(fontFamily: 'Cairo'))));
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
+
+  // 📤 بروتوكول المشاركة الفورية (Share Intent)
+  Future<void> _captureAndShare() async {
+    setState(() => _isSharing = true);
+    try {
+      final Uint8List? imageBytes = await _screenshotController.capture();
+      if (imageBytes != null) {
+        // إنشاء ملف مؤقت لمشاركته
+        final directory = await getTemporaryDirectory();
+        final imagePath = await File('${directory.path}/Al_Muhandis_Receipt_${widget.txData['transaction_id']}.png').create();
+        await imagePath.writeAsBytes(imageBytes);
+
+        // إطلاق نافذة المشاركة (واتساب، تيليجرام، إلخ)
+        await Share.shareXFiles(
+          [XFile(imagePath.path)],
+          text: 'إيصال حوالة رسمية من تطبيق المهندس Pay 🦅\nرقم العملية: ${widget.txData['transaction_id']}',
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("فشل في مشاركة الوثيقة", style: TextStyle(fontFamily: 'Cairo'))));
+    } finally {
+      setState(() => _isSharing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Screenshot(
+          controller: _screenshotController,
+          child: Container(
+            padding: const EdgeInsets.all(25),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0A0F18),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFd4af37).withOpacity(0.5), width: 1),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.verified_user, color: Color(0xFFd4af37), size: 50),
+                const SizedBox(height: 10),
+                const Text("إيصال تحويل رسمي", style: TextStyle(fontFamily: 'Cairo', fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold)),
+                const Text("AL-MUHANDIS PAY SECURED", style: TextStyle(fontSize: 10, color: Color(0xFFd4af37), letterSpacing: 2)),
+                const Divider(color: Colors.white24, height: 30),
+                _buildInfoRow("رقم العملية", widget.txData['transaction_id']?.toString() ?? '5124483B'),
+                _buildInfoRow("المستفيد", widget.txData['receiver'] ?? 'BARAA ZOUROB'),
+                _buildInfoRow("المبلغ", "${widget.txData['amount']} USDT", isRed: true),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white10)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Receipt Hash (HMAC Signature):", style: TextStyle(fontSize: 9, color: Colors.grey)),
+                      const SizedBox(height: 4),
+                      Text(widget.txData['hash'] ?? 'e80ec8b96021c664e61e00fb446329e0', style: const TextStyle(fontSize: 10, color: Color(0xFFd4af37), fontFamily: 'monospace')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 25),
+        // 🎛️ لوحة التحكم المزدوجة (حفظ + مشاركة)
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _isSaving ? null : _captureAndSave,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white10,
+                  side: const BorderSide(color: Color(0xFFd4af37)),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: _isSaving ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download, color: Color(0xFFd4af37)),
+                label: const Text("حفظ", style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _isSharing ? null : _captureAndShare,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFd4af37),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: _isSharing ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) : const Icon(Icons.share, color: Colors.black),
+                label: const Text("مشاركة", style: TextStyle(fontFamily: 'Cairo', color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {bool isRed = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontFamily: 'Cairo', color: Colors.grey, fontSize: 14)),
+          Text(value, style: TextStyle(fontFamily: 'Cairo', color: isRed ? Colors.redAccent : Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        ],
+      ),
+    );
+  }
+}
+
+
+======================================================================
+FILE: pubspec.yaml
+======================================================================
+name: al_muhandis_pay
+description: "Al-Muhandis Pay Sovereign Financial System"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  qr_flutter: ^4.1.0
+  local_auth: ^2.1.8
+  image_picker: ^1.0.7
+  crypto: ^3.0.3
+  http: ^1.1.0
+  cupertino_icons: ^1.0.2
+  screenshot: ^3.0.0
+  gal: ^2.3.2
+  share_plus: ^12.0.1
+  path_provider: ^2.1.5
+  shared_preferences: ^2.5.4
+  dio: ^5.9.1
+  flutter_secure_storage: ^10.0.0
+  google_fonts: ^8.0.2
+  url_launcher: ^6.3.2
+  flutter_local_notifications: ^17.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/fonts/
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700

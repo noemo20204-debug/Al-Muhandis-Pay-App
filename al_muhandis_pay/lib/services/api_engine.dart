@@ -22,6 +22,7 @@ class ApiEngine {
   late Dio dio;
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  FlutterSecureStorage get storage => _secureStorage;
   late final HmacInterceptor _hmacInterceptor;
 
   static const String currentAppVersion = '1.0.0';

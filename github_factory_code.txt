@@ -1,0 +1,34 @@
+======================================================================
+  AL-MUHANDIS PAY - GITHUB FACTORY (CI/CD PIPELINE)
+======================================================================
+
+📂 .github Directory Tree:
+.github
+.github/workflows
+.github/workflows/build.yml
+
+
+======================================================================
+  WORKFLOWS SOURCE CODE DUMP
+======================================================================
+
+
+======================================================================
+FILE: .github/workflows/build.yml
+======================================================================
+name: Build APK
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+    - run: cd al_muhandis_pay && flutter pub get
+    - run: cd al_muhandis_pay && flutter build apk
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Al-Muhandis-Pay-APK
+        path: al_muhandis_pay/build/app/outputs/flutter-apk/app-release.apk

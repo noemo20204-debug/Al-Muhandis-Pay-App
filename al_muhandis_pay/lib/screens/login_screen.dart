@@ -107,19 +107,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     setState(() { _isLoading = true; _errorMessage = null; });
     try {
       final res = await ApiEngine().login(_usernameCtrl.text.trim(), _passwordCtrl.text);
-      if (res.statusCode == 200) {
-        final data = res.data['data'] ?? res.data;
-        if (data['status'] == 'authenticated') { await _handleAuthenticated(data); return; }
-        if (data['status'] == 'pending_email_otp') {
-          _authTicket = data['auth_ticket']; _progressCtrl.animateTo(0.33); _startOtpTimer();
-          setState(() { _phase = 'email_otp'; _isLoading = false; _successMessage = 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.'; _errorMessage = null; });
-          _animatePhaseChange();
-          Future.delayed(const Duration(milliseconds: 500), () { if (mounted) _otpFocus.requestFocus(); });
-          return;
-        }
-      }
-      _showError('حدث خطأ غير متوقع.');
-    } catch (e) { _handleApiError(e); }
+      _routeAuth(res.data, null);
+    } catch (e) {
+      if (e is DioException && e.response?.data != null) { _routeAuth(e.response!.data, e); } 
+      else { _handleApiError(e); }
+    }
   }
 
   Future<void> _submitEmailOtp() async {
@@ -127,18 +119,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
     try {
       final res = await ApiEngine().verifyEmail(_authTicket ?? '', _otpCtrl.text.trim());
-      if (res.statusCode == 200) {
-        final data = res.data['data'] ?? res.data;
-        if (data['status'] == 'pending_google_2fa') {
-          _progressCtrl.animateTo(0.66);
-          setState(() { _phase = 'google_2fa'; _isLoading = false; _successMessage = 'تم التحقق. أدخل رمز Google Authenticator.'; _errorMessage = null; });
-          _animatePhaseChange();
-          Future.delayed(const Duration(milliseconds: 500), () { if (mounted) _googleFocus.requestFocus(); });
-          return;
-        }
-      }
-      _showError('حدث خطأ غير متوقع.');
-    } catch (e) { _handleApiError(e); }
+      _routeAuth(res.data, null);
+    } catch (e) {
+      if (e is DioException && e.response?.data != null) { _routeAuth(e.response!.data, e); } 
+      else { _handleApiError(e); }
+    }
   }
 
   Future<void> _submitGoogle2fa() async {
@@ -146,12 +131,44 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     setState(() { _isLoading = true; _errorMessage = null; _successMessage = null; });
     try {
       final res = await ApiEngine().verifyGoogle(_authTicket ?? '', _googleCtrl.text.trim());
-      if (res.statusCode == 200) {
-        final data = res.data['data'] ?? res.data;
-        if (data['status'] == 'authenticated') { _progressCtrl.animateTo(1.0); await _handleAuthenticated(data); return; }
+      _routeAuth(res.data, null);
+    } catch (e) {
+      if (e is DioException && e.response?.data != null) { _routeAuth(e.response!.data, e); } 
+      else { _handleApiError(e); }
+    }
+  }
+
+  // 🚀 المحرك الذكي الجديد لتوجيه الشاشات (ضعه تحت الدوال السابقة مباشرة)
+  Future<void> _routeAuth(dynamic responseData, dynamic originalError) async {
+    if (responseData is Map) {
+      final data = responseData['data'] ?? responseData;
+      final status = data['status'];
+
+      if (status == 'authenticated') {
+        _progressCtrl.animateTo(1.0);
+        await _handleAuthenticated(data);
+        return;
+      } else if (status == 'pending_email_otp') {
+        _authTicket = data['auth_ticket']; _progressCtrl.animateTo(0.33); _startOtpTimer();
+        setState(() { _phase = 'email_otp'; _isLoading = false; _successMessage = 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.'; _errorMessage = null; });
+        _animatePhaseChange();
+        Future.delayed(const Duration(milliseconds: 500), () { if (mounted) _otpFocus.requestFocus(); });
+        return;
+      } else if (status == 'pending_google_2fa') {
+        _progressCtrl.animateTo(0.66);
+        setState(() { _phase = 'google_2fa'; _isLoading = false; _successMessage = 'تم التحقق. أدخل رمز Google Authenticator.'; _errorMessage = null; });
+        _animatePhaseChange();
+        Future.delayed(const Duration(milliseconds: 500), () { if (mounted) _googleFocus.requestFocus(); });
+        return;
       }
-      _showError('حدث خطأ غير متوقع.');
-    } catch (e) { _handleApiError(e); }
+    }
+    
+    // إذا لم يكن هناك مسار، نعرض الخطأ الحقيقي
+    if (originalError != null) {
+      _handleApiError(originalError);
+    } else {
+      _showError(responseData is Map ? (responseData['message'] ?? 'حدث خطأ غير متوقع.') : 'حدث خطأ غير متوقع.');
+    }
   }
 
   Future<void> _handleAuthenticated(Map<String, dynamic> data) async {

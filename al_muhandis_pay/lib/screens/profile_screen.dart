@@ -30,10 +30,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUploading = false;
   String? _currentAvatar;
 
-  @override
+@override
   void initState() {
     super.initState();
-    _currentAvatar = widget.avatarUrl;
+    
+    String? tempAvatar = widget.avatarUrl;
+    
+    // 🚀 الرادار الذكي: فحص الرابط القادم من قاعدة البيانات
+    if (tempAvatar != null && tempAvatar.isNotEmpty) {
+      // إذا كان الرابط لا يحتوي على http (يعني مسار داخلي فقط)
+      if (!tempAvatar.startsWith('http')) {
+        // نقوم بتركيب الدومين الخاص بك قبله ليصبح رابطاً كاملاً
+        tempAvatar = 'https://al-muhandis.com/' + tempAvatar;
+      }
+    }
+    
+    _currentAvatar = tempAvatar;
   }
 
   Future<void> _contactSupport() async {

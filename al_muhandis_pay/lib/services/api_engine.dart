@@ -70,15 +70,6 @@ class ApiEngine {
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
-        // ─── Kill Switch: تحديث إجباري / صيانة ───
-        if (e.response?.statusCode == 426) {
-          final data = e.response?.data;
-          final updateUrl = data is Map
-              ? (data['update_url'] ?? 'https://al-muhandis.com/download/app.apk')
-              : 'https://al-muhandis.com/download/app.apk';
-          final isMaintenance = data is Map ? (data['maintenance'] == true) : false;
-          _triggerKillSwitch(updateUrl, isMaintenance);
-        }
 
         // ─── انتهاء الجلسة: مسح التوكن تلقائياً ───
         if (e.response?.statusCode == 401) {
@@ -88,20 +79,6 @@ class ApiEngine {
         return handler.next(e);
       },
     ));
-  }
-
-  void _triggerKillSwitch(String updateUrl, bool isMaintenance) {
-    if (_navigatorKey?.currentState != null) {
-      _navigatorKey!.currentState!.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => ForceUpdateScreen(
-            updateUrl: updateUrl,
-            isMaintenance: isMaintenance,
-          ),
-        ),
-        (Route<dynamic> route) => false,
-      );
-    }
   }
 
   Future<void> pingForVersionCheck() async {

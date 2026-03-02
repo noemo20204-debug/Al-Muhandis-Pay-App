@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:install_plugin/install_plugin.dart';
+import 'package:open_filex/open_filex.dart';
 
 class ForceUpdateScreen extends StatefulWidget {
   final String updateUrl;
@@ -76,13 +76,14 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
 
       // 3. 🚨 تسليم الملف لمثبت حزم الأندرويد (تحديث التطبيق)
       // ملاحظة: استبدل 'com.example.al_muhandis_pay' باسم الحزمة (Package Name) الفعلي لتطبيقك
-      InstallPlugin.installApk(savePath, 'com.example.al_muhandis_pay').then((result) {
-        debugPrint('Install triggered: $result');
-      }).catchError((error) {
-        // إذا رفض النظام التثبيت، نعود للخطة ب
-        setState(() => _isDownloading = false);
-        _launchUpdateExternal();
-      });
+      // 3. 🚨 فتح الملف لتبدأ عملية التثبيت السيادية
+   final result = await OpenFilex.open(savePath);
+
+   // إذا حدث أي خطأ في فتح الملف (مثلاً النظام رفضه)، نعود للخطة البديلة (المتصفح)
+   if (result.type != ResultType.done) {
+     setState(() => _isDownloading = false);
+     _launchUpdateExternal();
+   }
 
     } catch (e) {
       // إذا فشل التحميل لأي سبب، نلغي حالة التحميل ونفتح المتصفح

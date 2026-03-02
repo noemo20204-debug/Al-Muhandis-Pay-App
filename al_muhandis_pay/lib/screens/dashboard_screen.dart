@@ -18,7 +18,6 @@ import '../core/elite_alerts.dart';
 // 🟢 استشعار حالة التطبيق (خلفية أم مفتوح)
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
-
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -92,7 +91,15 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         setState(() {
           if (resData['user'] != null) {
             _userName = resData['user']['name'] ?? 'عميل المهندس';
-            _avatarUrl = resData['user']['avatar'];
+            // 🚀 الرادار الذكي لتركيب الرابط في الشاشة الرئيسية
+            String? tempAvatar = resData['user']['avatar'];
+            if (tempAvatar != null && tempAvatar.isNotEmpty) {
+              // إذا كان المسار القادم لا يحتوي على http، نقوم بتركيب الدومين
+              if (!tempAvatar.startsWith('http')) {
+                tempAvatar = 'https://al-muhandis.com/' + tempAvatar;
+              }
+            }
+            _avatarUrl = tempAvatar;
           }
           if (resData['wallet'] != null) {
             double newBalance = double.tryParse(resData['wallet']['balance'].toString()) ?? 0.0;

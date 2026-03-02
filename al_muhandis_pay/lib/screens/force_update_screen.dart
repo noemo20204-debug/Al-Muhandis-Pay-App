@@ -28,6 +28,7 @@ class ForceUpdateScreen extends StatelessWidget {
         child: Scaffold(
           backgroundColor: const Color(0xFF030712),
           body: SafeArea(
+                bottom: false, // 🚀 هنا يكمن السر لإغلاق الشق السفلي!
             child: Padding(
               padding: const EdgeInsets.all(32.0),
               child: Column(

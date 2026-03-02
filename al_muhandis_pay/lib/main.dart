@@ -84,6 +84,7 @@ class _AlMuhandisAppState extends State<AlMuhandisApp> {
             showDialog(
               context: globalAppNavigatorKey.currentContext!,
               barrierDismissible: false, // يمنع إغلاقها بالنقر خارجها
+              useSafeArea: false, // 🚀
               builder: (context) => PopScope(
                 canPop: false, // 🟢 يمنع إغلاقها بزر الرجوع في الأندرويد
                 child: ForceUpdateScreen(
